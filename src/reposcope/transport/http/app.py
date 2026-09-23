@@ -26,9 +26,12 @@ from contracts.models import (
     RunAccepted,
     RunCreate,
     RunView,
+    SearchRequest,
+    SearchResponse,
 )
 from reposcope.application.work import WorkService
 from reposcope.domain.errors import WorkError
+from reposcope.ports.retrieval import SearchWorkflow
 from reposcope.runtime import RuntimeResources
 from reposcope.settings import RuntimeSettings
 
@@ -83,6 +86,7 @@ def create_public_application(
     resources: RuntimeResources,
     settings: RuntimeSettings,
     service: WorkService | None,
+    retrieval: SearchWorkflow | None = None,
 ) -> FastAPI:
     """Register authenticated business controllers on the public application only."""
     application = create_health_application(resources, include_metrics=False)
@@ -136,6 +140,14 @@ def create_public_application(
     async def get_run(run_id: str, request: Request) -> RunView:
         workflow = authorized(request)
         return await workflow.get_run(settings.principal_id, identifier(run_id))
+
+    @application.post("/v1/search", response_model=SearchResponse)
+    async def search(request: Request) -> SearchResponse:
+        authorized(request)
+        if retrieval is None:
+            raise WorkError("DEPENDENCY_UNAVAILABLE")
+        body = SearchRequest.model_validate_json(await request.body())
+        return await retrieval.search(body, settings.principal_id)
 
     return application
 

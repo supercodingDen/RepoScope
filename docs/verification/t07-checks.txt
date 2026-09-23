@@ -1,0 +1,8 @@
+T07 verification, 2026-09-23 UTC, Windows native environment
+
+Offline pytest: 333 passed, 71 skipped in 16.31 s.
+Native PostgreSQL 17/pgvector 0.8.6, NATS 2.14.7 and public GitHub integration: 74 passed, 1 optional benchmark skipped in 80.56 s. Public source pinned to 672971d66a2ef9f85151e53283113f33d642dabd; 49 eligible files, manifest 7fb39a96d85f32060b90849bc4da4dca84e109bdc5e9f6d9d06a4a4521257ebb.
+Separate opt-in retrieval baseline: 1 passed in 19.02 s. 1,009 real chunks from 16 distinct CPython 3.12.14 Lib files; source fingerprint 11bc66078fab0e384f590b0811ff659872049a71f0d791bea5df4381267f887b. Five warm-ups, then three trials of 20 serial queries: exact DB p95 94.199 ms, HNSW-eligible DB p95 98.325 ms, end-to-end mock text p95 93.866 ms. Small corpus; no claim of index-plan use, 100K scale, 32-client throughput, live-provider latency or relevance.
+Strict mypy on Windows and Linux targets: 95 source files passed. Ruff lint: passed. Ruff format: 128 files formatted. Contract export check: 48 current files. Semantic validation: 20 schema/example pairs and two OpenAPI documents valid.
+Redacted source-only Gitleaks: 207 reviewed files, approximately 1.11 MB; no leaks found.
+No live paid provider call. Docker/Compose smoke and 100K filtered ANN recall remain unexecuted.

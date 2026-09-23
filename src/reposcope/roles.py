@@ -13,18 +13,22 @@ from types import FrameType
 
 import uvicorn
 from fastapi import FastAPI
+from psycopg import AsyncConnection
+from psycopg_pool import AsyncConnectionPool
 
 from reposcope.adapters.embedding import MockEmbeddingProvider, OpenAIEmbeddingProvider
 from reposcope.adapters.embedding_budget import PostgresEmbeddingBudget
 from reposcope.adapters.nats_delivery import JetStreamBroker
 from reposcope.adapters.postgres_delivery import PostgresDeliveryRepository
 from reposcope.adapters.postgres_index import PostgresIndexRepository
+from reposcope.adapters.postgres_retrieval import PostgresRetrievalRepository
 from reposcope.adapters.postgres_source import PostgresSourceRepository
 from reposcope.adapters.postgres_work import PostgresWorkRepository
 from reposcope.adapters.source_git import GitSource
 from reposcope.adapters.source_storage import SourceStore
 from reposcope.application.delivery import DeliveryWorker, OutboxPublisher, run_reconciler
 from reposcope.application.index import IndexHandler
+from reposcope.application.retrieval import RetrievalService
 from reposcope.application.source import SourceAcquisitionHandler
 from reposcope.application.work import WorkService
 from reposcope.domain.delivery import Handler, UnconfiguredHandler
@@ -65,22 +69,7 @@ async def run_role(settings: RuntimeSettings) -> None:
                     if isinstance(handler, SourceAcquisitionHandler):
                         group.create_task(handler.run_cleanup(stopping))
                         assert settings.source_root is not None
-                        provider: EmbeddingProvider
-                        if settings.provider_mode == "openai":
-                            assert settings.embedding_daily_budget_usd is not None
-                            assert settings.embedding_price_per_million_usd is not None
-                            assert settings.embedding_price_verified_date is not None
-                            provider = OpenAIEmbeddingProvider(
-                                settings.openai_api_key.get_secret_value(),
-                                PostgresEmbeddingBudget(
-                                    resources.probe.database_pool,
-                                    settings.embedding_daily_budget_usd,
-                                    settings.embedding_price_per_million_usd,
-                                    settings.embedding_price_verified_date,
-                                ),
-                            )
-                        else:
-                            provider = MockEmbeddingProvider()
+                        provider = embedding_provider(settings, resources.probe.database_pool)
                         index_handler = IndexHandler(
                             PostgresIndexRepository(repository),
                             SourceStore(Path(settings.source_root)),
@@ -106,7 +95,15 @@ async def run_role(settings: RuntimeSettings) -> None:
                     if isinstance(resources.probe, ManagedDependencyProbe)
                     else None
                 )
-                public = create_public_application(resources, settings, service)
+                retrieval = (
+                    RetrievalService(
+                        PostgresRetrievalRepository(resources.probe.database_pool),
+                        embedding_provider(settings, resources.probe.database_pool),
+                    )
+                    if isinstance(resources.probe, ManagedDependencyProbe)
+                    else None
+                )
+                public = create_public_application(resources, settings, service, retrieval)
                 group.create_task(
                     _serve(
                         public,
@@ -135,6 +132,26 @@ async def run_role(settings: RuntimeSettings) -> None:
                 "role_shutdown_failed",
                 extra={"event": "role_shutdown_failed", "role": settings.role},
             )
+
+
+def embedding_provider(
+    settings: RuntimeSettings, pool: AsyncConnectionPool[AsyncConnection[tuple[str]]]
+) -> EmbeddingProvider:
+    """Select the same versioned embedding space for indexing and search."""
+    if settings.provider_mode == "openai":
+        assert settings.embedding_daily_budget_usd is not None
+        assert settings.embedding_price_per_million_usd is not None
+        assert settings.embedding_price_verified_date is not None
+        return OpenAIEmbeddingProvider(
+            settings.openai_api_key.get_secret_value(),
+            PostgresEmbeddingBudget(
+                pool,
+                settings.embedding_daily_budget_usd,
+                settings.embedding_price_per_million_usd,
+                settings.embedding_price_verified_date,
+            ),
+        )
+    return MockEmbeddingProvider()
 
 
 def delivery_handler(settings: RuntimeSettings, repository: PostgresDeliveryRepository) -> Handler:

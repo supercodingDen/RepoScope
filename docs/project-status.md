@@ -1,7 +1,24 @@
 # Project status
 
-Milestone: **T06 bounded indexing implemented and verified in the native Windows environment**.
+Milestone: **T07 scoped retrieval implemented and verified in the native Windows environment**.
 Verification date: 2026-09-23 UTC. Working project: `D:\RepoScope_project\reposcope`.
+
+## T07 delivery and verification
+
+- Authenticated `POST /v1/search` resolves only the caller's active ready generation and pins its commit, embedding space and source citations. Unknown or foreign repositories are hidden; unfinished indexes return `INDEX_NOT_READY`; empty ready indexes return no matches without an embedding call.
+- Query embedding uses the indexed 384-dimensional space. Vector and code-friendly `simple` FTS searches each retrieve at most 50 candidates with identical generation, language and literal path-prefix filters. Underfilled global ANN searches fall back to scoped exact top-50. RRF `k=60` breaks ties by path and ordinal. A bounded exact-vector path supplies a baseline; public search uses the HNSW-eligible path. Deterministic chunk UUIDs preserve distinct locations for repeated content.
+- The API shares the durable paid-call budget controls with the indexer when explicitly configured for live embeddings. Default mock mode made zero paid calls. Agent execution and one-hop context expansion are later work.
+
+| T07 check | Executed result |
+| --- | --- |
+| Full offline pytest | 333 passed, 71 skipped |
+| Native PostgreSQL/NATS/public GitHub integration | 74 passed, 1 optional benchmark skipped in 80.56 s |
+| Strict mypy, Ruff lint/format | Passed; 95 Python files type-checked on Windows and Linux targets; 128 files formatted |
+| Initial 1,009-real-chunk retrieval baseline | Exact DB p95 94.199 ms; HNSW-eligible DB p95 98.325 ms; end-to-end mock text p95 93.866 ms; 3 × 20 serial queries after warm-up |
+| Independent review | [Filtered ANN underfill fixed and closure reviewed](verification/t07-review.md); no remaining Critical or Important finding |
+| Redacted source-only Gitleaks | 207 reviewed files, approximately 1.11 MB; no leaks found |
+
+The baseline used 16 distinct CPython 3.12.14 files, source fingerprint `11bc66078fab0e384f590b0811ff659872049a71f0d791bea5df4381267f887b`. The small corpus may use sequential scans, so it does not demonstrate HNSW index use or meet the roadmap's 100K/32-client gate. It measures mock query embeddings, not live-provider latency or semantic relevance. The [T07 guide](t07-retrieval.md) and [check evidence](verification/t07-checks.txt) record the method and remaining gates. Docker/Compose acceptance remains open below.
 
 ## T06 delivery and verification
 
@@ -66,6 +83,6 @@ Disk limits are enforced by monitoring and finalization checks, with possible tr
 
 ## Next milestone
 
-T07: scoped retrieval over ready generations with source-grounded citations. T08 agent execution is also not implemented by this delivery. The original overall job deadline still applies to source acquisition and indexing.
+T08: pinned read-only agent execution using the shared retrieval service. T09's one-hop context expansion and later performance gates remain open. The original overall job deadline still applies to source acquisition and indexing.
 
-The reviewed source was synchronized to the owner's private GitHub repository, `supercodingDen/RepoScope`, on 2026-09-23 UTC (initial import commit `2c0e6f015588db0906c8ba50cb0448e5a505acfe`). The D-drive extraction has no persistent local Git history; synchronization used the connected GitHub integration. Public release, PR, hosted deployment and system installation were not performed. Remote CI results have not been verified. Earlier T03 evidence remains in `docs/verification/t03-checks.txt`, `t03-native-checks.txt` and the T03 API guide.
+The reviewed source is synchronized to the owner's private GitHub repository, `supercodingDen/RepoScope`, after each complete task. The D-drive extraction has no persistent local Git history; synchronization uses the connected GitHub integration. Public release, PR, hosted deployment and system installation were not performed. Remote CI results have not been verified. Earlier T03 evidence remains in `docs/verification/t03-checks.txt`, `t03-native-checks.txt` and the T03 API guide.
