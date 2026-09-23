@@ -51,7 +51,7 @@ class JetStreamBroker:
             subjects=[self.subject(subject) for subject in PUBLICATION_SUBJECTS],
             retention=RetentionPolicy.LIMITS,
             storage=StorageType.FILE,
-            max_consumers=2,
+            max_consumers=3,
             max_msgs=100000,
             max_bytes=64 * 1024 * 1024,
             max_age=86400,
@@ -95,15 +95,23 @@ class JetStreamBroker:
             "num_replicas",
             "duplicate_window",
         )
-        previous_subjects = [self.subject(subject) for subject in SUBJECTS.values()]
-        if stream.config.subjects == previous_subjects and all(
+        previous_subjects = [
+            self.subject("repo.ingest.requested"),
+            self.subject("agent.run.requested"),
+        ]
+        known_previous = stream.config.max_consumers == 2 and stream.config.subjects in (
+            previous_subjects,
+            wanted.subjects,
+        )
+        if known_previous and all(
             getattr(stream.config, key) == getattr(wanted, key)
             for key in fields
-            if key != "subjects"
+            if key not in {"subjects", "max_consumers"}
         ):
-            # Only the exact T04 topology is eligible for this additive upgrade.
+            # Only exact T04/T05 topologies are eligible for this additive upgrade.
             upgraded = stream.config
             upgraded.subjects = wanted.subjects
+            upgraded.max_consumers = wanted.max_consumers
             stream = await self.js.update_stream(upgraded)
         if any(getattr(stream.config, key) != getattr(wanted, key) for key in fields):
             raise RuntimeError("Delivery stream configuration drift")

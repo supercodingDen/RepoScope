@@ -71,6 +71,8 @@ CI checks schema drift, semantic fixtures, Ruff formatting/lint, strict mypy (sr
 
 T03 provides persistent admission and status endpoints. Worker execution, GitHub CI execution and external hosting are separate milestones; local checks do not imply deployment.
 
+T06 indexing now runs in the indexer after T05's durable source handoff. Keep the default mock provider for normal development and tests. Live embeddings require the explicit indexer-only environment settings documented in [T06 indexing](t06-indexing.md). Apply `0005_index` before starting the roles; readiness requires that migration. The Windows native PostgreSQL/NATS acceptance does not substitute for the still-open Docker/Compose smoke gate.
+
 ### Optional native broker recovery check
 
 A trusted operator-supplied NATS server binary can exercise the production JetStream client without Docker. Set `NATS_SERVER_BINARY` to its absolute executable path, then run `uv run --frozen pytest tests/integration/test_nats_recovery.py -q`. The test starts a localhost-only server with temporary storage, checks the actual client's account probe, stops/restarts the broker, and removes its owned process afterward. It does not test PostgreSQL, Redis, or Linux container compatibility. On Windows, the server subprocess is hidden.

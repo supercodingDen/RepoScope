@@ -14,18 +14,28 @@ pytestmark = pytest.mark.integration
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "previous_subjects",
+    [
+        ("repo.ingest.requested", "agent.run.requested"),
+        tuple(SUBJECTS.values()),
+    ],
+)
 async def test_known_previous_topology_upgrades_and_preserves_consumers(
     broker: JetStreamBroker,
+    previous_subjects: tuple[str, ...],
 ) -> None:
     old = broker.stream_config()
-    old.subjects = [broker.subject(subject) for subject in SUBJECTS.values()]
+    old.subjects = [broker.subject(subject) for subject in previous_subjects]
+    old.max_consumers = 2
     await broker.js.update_stream(old)
     await broker.setup()
     event = source_event()
     await broker.publish(event)
     stream = await broker.js.stream_info(broker.stream)
     assert stream.state.messages == 1
-    assert stream.state.consumer_count == 2
+    assert stream.state.consumer_count == 3
+    assert stream.config.max_consumers == 3
     stored = await broker.js.get_msg(broker.stream, seq=1)
     assert stored.subject == broker.subject("repo.source.acquired")
     assert stored.data == event.model_dump_json().encode()

@@ -16,7 +16,7 @@ from psycopg_pool import AsyncConnectionPool
 
 from reposcope.settings import RuntimeSettings
 
-INITIAL_MIGRATION_VERSION = "0004_source"
+INITIAL_MIGRATION_VERSION = "0005_index"
 LOGGER = logging.getLogger("reposcope.runtime")
 
 

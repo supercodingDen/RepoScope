@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,6 +44,10 @@ class SourceManifest:
 class SourceSnapshot:
     manifest: SourceManifest
     storage_key: str
+    file_index: frozenset[SourceFile] = field(init=False, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "file_index", frozenset(self.manifest.files))
 
     @property
     def digest(self) -> str:

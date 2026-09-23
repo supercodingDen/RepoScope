@@ -1,0 +1,28 @@
+{
+  "source": "CPython 3.12.14 Lib and uv.lock-installed public Python packages",
+  "eligible_file_count": 4804,
+  "cycles": 1,
+  "repeated_real_source": false,
+  "source_fingerprint": "159dcd550b7f2ec53802f11c65859d7bcab5eba082a8eb21a5a19119aa515c86",
+  "skipped": 0,
+  "checkpoints": [
+    {
+      "target": 10000,
+      "chunks": 10012,
+      "vectors": 10012,
+      "files": 332,
+      "elapsed_seconds": 21.437,
+      "python_peak_bytes": 21253086,
+      "process_peak_rss_bytes": 156184576
+    },
+    {
+      "target": 50000,
+      "chunks": 50007,
+      "vectors": 50007,
+      "files": 1705,
+      "elapsed_seconds": 112.125,
+      "python_peak_bytes": 26400487,
+      "process_peak_rss_bytes": 184516608
+    }
+  ]
+}

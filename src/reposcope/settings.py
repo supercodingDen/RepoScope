@@ -6,6 +6,8 @@ import math
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import UTC, date, datetime, timedelta
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Literal, Self
 from urllib.parse import urlsplit
@@ -28,8 +30,8 @@ class RuntimeSettings:
     redis_url: SecretStr
     nats_url: SecretStr
     role: Role
-    provider_mode: Literal["mock"]
-    allow_paid_api_calls: Literal[False]
+    provider_mode: Literal["mock", "openai"]
+    allow_paid_api_calls: bool
     public_host: str
     public_port: int
     management_host: str
@@ -43,6 +45,10 @@ class RuntimeSettings:
     source_root: str | None = None
     git_binary: str | None = None
     source_import_root: str | None = None
+    openai_api_key: SecretStr = SecretStr("")
+    embedding_daily_budget_usd: Decimal | None = None
+    embedding_price_per_million_usd: Decimal | None = None
+    embedding_price_verified_date: date | None = None
 
     @property
     def database_pool_size(self) -> int:
@@ -60,17 +66,27 @@ class RuntimeSettings:
         _validate_url(nats_url, ("nats", "tls"))
         role = _role(values.get("ROLE", "api"))
         provider_mode = values.get("PROVIDER_MODE", "mock")
-        if provider_mode != "mock":
-            raise SettingsValidationError("Only mock provider mode is allowed during T02.")
-        if _boolean(values.get("ALLOW_PAID_API_CALLS", "false")):
-            raise SettingsValidationError("Paid API calls are disabled during T02.")
+        if provider_mode not in {"mock", "openai"}:
+            raise SettingsValidationError("Provider mode must be mock or openai.")
+        paid = _boolean(values.get("ALLOW_PAID_API_CALLS", "false"))
+        budget: Decimal | None = None
+        price: Decimal | None = None
+        verified: date | None = None
+        if provider_mode == "openai":
+            if not paid or not values.get("OPENAI_API_KEY", "").strip():
+                raise SettingsValidationError("OpenAI requires explicit paid opt-in and key.")
+            budget = _positive_decimal(values.get("EMBEDDING_DAILY_BUDGET_USD", ""))
+            price = _positive_decimal(values.get("EMBEDDING_PRICE_PER_MILLION_USD", ""))
+            verified = _price_verified_date(values.get("EMBEDDING_PRICE_VERIFIED_DATE", ""))
+        elif paid:
+            raise SettingsValidationError("Paid opt-in requires OpenAI provider mode.")
         return cls(
             database_url=SecretStr(database_url),
             redis_url=SecretStr(redis_url),
             nats_url=SecretStr(nats_url),
             role=role,
-            provider_mode="mock",
-            allow_paid_api_calls=False,
+            provider_mode="openai" if provider_mode == "openai" else "mock",
+            allow_paid_api_calls=paid,
             public_host=values.get("PUBLIC_HOST", "127.0.0.1"),
             public_port=_port(values.get("PUBLIC_PORT", "8000")),
             management_host=values.get("MANAGEMENT_HOST", "127.0.0.1"),
@@ -85,6 +101,10 @@ class RuntimeSettings:
             principal_id=_principal(
                 values.get("REPOSCOPE_PRINCIPAL_ID", "00000000-0000-0000-0000-000000000001")
             ),
+            openai_api_key=SecretStr(values.get("OPENAI_API_KEY", "")),
+            embedding_daily_budget_usd=budget,
+            embedding_price_per_million_usd=price,
+            embedding_price_verified_date=verified,
         )
 
     @classmethod
@@ -144,6 +164,29 @@ def _boolean(value: str) -> bool:
     if value.lower() in {"false", "0"}:
         return False
     raise SettingsValidationError("Boolean setting must be true or false.")
+
+
+def _positive_decimal(value: str) -> Decimal:
+    try:
+        amount = Decimal(value)
+    except InvalidOperation:
+        raise SettingsValidationError(
+            "Embedding budget and price must be positive decimals."
+        ) from None
+    if not amount.is_finite() or amount <= 0 or amount > Decimal("100000"):
+        raise SettingsValidationError("Embedding budget and price must be positive decimals.")
+    return amount
+
+
+def _price_verified_date(value: str) -> date:
+    try:
+        verified = date.fromisoformat(value)
+    except ValueError:
+        raise SettingsValidationError("Embedding price verification date is invalid.") from None
+    today = datetime.now(UTC).date()
+    if not today - timedelta(days=7) <= verified <= today:
+        raise SettingsValidationError("Embedding price verification date is stale or future.")
+    return verified
 
 
 def _port(value: str) -> int:

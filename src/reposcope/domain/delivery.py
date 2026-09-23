@@ -11,8 +11,8 @@ from uuid import UUID
 
 from contracts.models import AgentRequested, IngestRequested, RunResult, SourceAcquired
 
-type DeliveryEvent = IngestRequested | AgentRequested
-type PublicationEvent = DeliveryEvent | SourceAcquired
+type DeliveryEvent = IngestRequested | AgentRequested | SourceAcquired
+type PublicationEvent = DeliveryEvent
 
 
 @dataclass(frozen=True)
@@ -111,16 +111,20 @@ def parse_event(data: bytes | str) -> DeliveryEvent:
     try:
         return IngestRequested.model_validate_json(data)
     except ValueError:
-        return AgentRequested.model_validate_json(data)
+        try:
+            return AgentRequested.model_validate_json(data)
+        except ValueError:
+            return SourceAcquired.model_validate_json(data)
 
 
 def parse_publication(data: bytes | str) -> PublicationEvent:
-    """Publication includes staged continuations, independent of request consumers."""
-    try:
-        return parse_event(data)
-    except ValueError:
-        return SourceAcquired.model_validate_json(data)
+    """Validate events for the publisher and all durable consumers."""
+    return parse_event(data)
 
 
-SUBJECTS = {"indexer": "repo.ingest.requested", "agent": "agent.run.requested"}
-PUBLICATION_SUBJECTS = (*SUBJECTS.values(), "repo.source.acquired")
+SUBJECTS = {
+    "indexer": "repo.ingest.requested",
+    "agent": "agent.run.requested",
+    "source": "repo.source.acquired",
+}
+PUBLICATION_SUBJECTS = tuple(SUBJECTS.values())

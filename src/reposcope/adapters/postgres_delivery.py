@@ -12,7 +12,7 @@ from uuid import UUID
 from psycopg import AsyncConnection, sql
 from psycopg_pool import AsyncConnectionPool
 
-from contracts.models import AgentRequested, Contract, IngestRequested
+from contracts.models import AgentRequested, Contract, IngestRequested, SourceAcquired
 from reposcope.adapters.postgres_work import _read
 from reposcope.domain.delivery import (
     Complete,
@@ -48,6 +48,8 @@ class _LeaseState(Contract):
 def _table(event: DeliveryEvent) -> tuple[str, str, str]:
     if isinstance(event, IngestRequested):
         return "jobs", "job_id", "attempts"
+    if isinstance(event, SourceAcquired):
+        return "jobs", "job_id", "index_attempts"
     return "agent_runs", "run_id", "delivery_attempts"
 
 
@@ -148,6 +150,24 @@ class PostgresDeliveryRepository:
             if isinstance(event, IngestRequested):
                 query += sql.SQL("AND w.requested_ref=%s")
                 parameters.append(event.payload.requested_ref)
+            elif isinstance(event, SourceAcquired):
+                query += sql.SQL(
+                    "AND w.generation_id=%s AND w.commit_sha=%s AND EXISTS ("
+                    "SELECT 1 FROM reposcope.source_manifests m WHERE m.job_id=w.job_id "
+                    "AND m.repository_id=%s AND m.generation_id=%s AND m.principal_id=%s "
+                    "AND m.commit_sha=%s AND m.manifest_digest=%s)"
+                )
+                parameters.extend(
+                    [
+                        event.payload.generation_id,
+                        event.payload.commit_sha,
+                        event.payload.repository_id,
+                        event.payload.generation_id,
+                        event.payload.principal_id,
+                        event.payload.commit_sha,
+                        event.payload.manifest_digest,
+                    ]
+                )
             else:
                 query += sql.SQL(
                     "AND w.generation_id=%s AND w.commit_sha=%s AND w.policy_version=%s"
@@ -385,6 +405,8 @@ class PostgresDeliveryRepository:
             failure = outcome.code if isinstance(outcome, PermanentFailure) else None
             status = "failed" if failure else "succeeded"
             table, key, _ = _table(lease.event)
+            if isinstance(lease.event, SourceAcquired) and isinstance(outcome, Complete):
+                raise ValueError("Index completion requires atomic generation publication")
             if isinstance(lease.event, AgentRequested) and isinstance(outcome, Complete):
                 if outcome.result is None:
                     raise ValueError("Agent completion requires a validated result")
@@ -422,7 +444,7 @@ class PostgresDeliveryRepository:
                     + sql.SQL(" WHERE {}=%s").format(sql.Identifier(key)),
                     (status, failure, lease.event.aggregate_id),
                 )
-            if failure and isinstance(lease.event, IngestRequested):
+            if failure and isinstance(lease.event, (IngestRequested, SourceAcquired)):
                 await connection.execute(
                     "UPDATE reposcope.index_generations SET status='failed', "
                     "updated_at=clock_timestamp() WHERE generation_id=(SELECT generation_id FROM "
@@ -440,10 +462,12 @@ class PostgresDeliveryRepository:
                 "SELECT payload::text FROM reposcope.outbox_events o "
                 "LEFT JOIN reposcope.jobs j ON j.job_id=o.job_id LEFT JOIN reposcope.agent_runs "
                 "r ON r.run_id=o.run_id "
-                "WHERE o.event_type IN ('repo.ingest.requested','agent.run.requested') AND "
+                "WHERE o.event_type IN ('repo.ingest.requested','repo.source.acquired',"
+                "'agent.run.requested') AND "
                 "coalesce(j.status,r.status) IN ('queued','running') AND "
                 "(coalesce(j.deadline_at,r.deadline_at)<=clock_timestamp() OR "
-                "(coalesce(j.attempts,r.delivery_attempts)>=5 AND NOT EXISTS "
+                "((CASE WHEN o.event_type='repo.source.acquired' THEN j.index_attempts "
+                "ELSE coalesce(j.attempts,r.delivery_attempts) END)>=5 AND NOT EXISTS "
                 "(SELECT 1 FROM reposcope.consumer_work c WHERE c.event_id=o.event_id "
                 "AND c.completed_at IS NOT NULL) AND "
                 "(coalesce(j.lease_until,r.lease_until) IS NULL OR "
@@ -453,7 +477,13 @@ class PostgresDeliveryRepository:
             for row in payloads:
                 event = parse_event(row[0])
                 table, key, attempts = _table(event)
-                consumer = "indexer" if isinstance(event, IngestRequested) else "agent"
+                consumer = (
+                    "indexer"
+                    if isinstance(event, IngestRequested)
+                    else "source"
+                    if isinstance(event, SourceAcquired)
+                    else "agent"
+                )
                 await connection.execute(
                     sql.SQL(
                         "INSERT INTO reposcope.consumer_work "
@@ -488,7 +518,7 @@ class PostgresDeliveryRepository:
                 if failure is None:
                     continue
                 await self._completion(connection, consumer, event, "failed", failure[0])
-                if isinstance(event, IngestRequested):
+                if isinstance(event, (IngestRequested, SourceAcquired)):
                     await connection.execute(
                         "UPDATE reposcope.index_generations SET status='failed', "
                         "updated_at=clock_timestamp() WHERE generation_id=(SELECT generation_id "

@@ -14,16 +14,21 @@ from types import FrameType
 import uvicorn
 from fastapi import FastAPI
 
+from reposcope.adapters.embedding import MockEmbeddingProvider, OpenAIEmbeddingProvider
+from reposcope.adapters.embedding_budget import PostgresEmbeddingBudget
 from reposcope.adapters.nats_delivery import JetStreamBroker
 from reposcope.adapters.postgres_delivery import PostgresDeliveryRepository
+from reposcope.adapters.postgres_index import PostgresIndexRepository
 from reposcope.adapters.postgres_source import PostgresSourceRepository
 from reposcope.adapters.postgres_work import PostgresWorkRepository
 from reposcope.adapters.source_git import GitSource
 from reposcope.adapters.source_storage import SourceStore
 from reposcope.application.delivery import DeliveryWorker, OutboxPublisher, run_reconciler
+from reposcope.application.index import IndexHandler
 from reposcope.application.source import SourceAcquisitionHandler
 from reposcope.application.work import WorkService
 from reposcope.domain.delivery import Handler, UnconfiguredHandler
+from reposcope.ports.embedding import EmbeddingProvider
 from reposcope.runtime import ManagedDependencyProbe, RuntimeResources
 from reposcope.settings import RuntimeSettings
 from reposcope.transport.http.app import create_health_application, create_public_application
@@ -59,6 +64,34 @@ async def run_role(settings: RuntimeSettings) -> None:
                     handler = delivery_handler(settings, repository)
                     if isinstance(handler, SourceAcquisitionHandler):
                         group.create_task(handler.run_cleanup(stopping))
+                        assert settings.source_root is not None
+                        provider: EmbeddingProvider
+                        if settings.provider_mode == "openai":
+                            assert settings.embedding_daily_budget_usd is not None
+                            assert settings.embedding_price_per_million_usd is not None
+                            assert settings.embedding_price_verified_date is not None
+                            provider = OpenAIEmbeddingProvider(
+                                settings.openai_api_key.get_secret_value(),
+                                PostgresEmbeddingBudget(
+                                    resources.probe.database_pool,
+                                    settings.embedding_daily_budget_usd,
+                                    settings.embedding_price_per_million_usd,
+                                    settings.embedding_price_verified_date,
+                                ),
+                            )
+                        else:
+                            provider = MockEmbeddingProvider()
+                        index_handler = IndexHandler(
+                            PostgresIndexRepository(repository),
+                            SourceStore(Path(settings.source_root)),
+                            provider,
+                        )
+                        index_handler.slots = handler.slots
+                        group.create_task(
+                            DeliveryWorker(repository, broker, "source", index_handler).run(
+                                stopping
+                            )
+                        )
                     group.create_task(
                         DeliveryWorker(
                             repository,

@@ -1,4 +1,4 @@
-"""Source continuation is publishable but never an acquisition request."""
+"""Source continuation is publishable and becomes a T06 consumer event."""
 
 from __future__ import annotations
 
@@ -34,11 +34,10 @@ def source_event() -> SourceAcquired:
     )
 
 
-def test_source_event_is_publishable_not_a_request() -> None:
+def test_source_event_is_publishable_and_consumable() -> None:
     event = source_event()
     assert parse_publication(event.model_dump_json()) == event
-    with pytest.raises(ValueError):
-        parse_event(event.model_dump_json())
+    assert parse_event(event.model_dump_json()) == event
 
 
 @pytest.mark.parametrize(

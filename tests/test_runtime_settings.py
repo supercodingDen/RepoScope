@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
 from pydantic import SecretStr
 
@@ -56,6 +58,55 @@ def test_settings_reject_live_provider_mode() -> None:
                 "PROVIDER_MODE": "live",
             }
         )
+
+
+def test_settings_accept_explicit_budgeted_openai_mode() -> None:
+    settings = RuntimeSettings.from_values(
+        {
+            "DATABASE_URL": "postgresql://runtime:secret@postgres/reposcope",
+            "REDIS_URL": "redis://redis:6379/0",
+            "NATS_URL": "nats://nats:4222",
+            "ROLE": "indexer",
+            "PROVIDER_MODE": "openai",
+            "ALLOW_PAID_API_CALLS": "true",
+            "OPENAI_API_KEY": "test-key-never-logged",
+            "EMBEDDING_DAILY_BUDGET_USD": "1.00",
+            "EMBEDDING_PRICE_PER_MILLION_USD": "0.02",
+            "EMBEDDING_PRICE_VERIFIED_DATE": datetime.now(UTC).date().isoformat(),
+        }
+    )
+    assert settings.provider_mode == "openai"
+    assert settings.allow_paid_api_calls
+    assert settings.embedding_daily_budget_usd is not None
+    assert "test-key-never-logged" not in repr(settings)
+
+
+@pytest.mark.parametrize(
+    "override",
+    [
+        {"ALLOW_PAID_API_CALLS": "false"},
+        {"OPENAI_API_KEY": ""},
+        {"EMBEDDING_DAILY_BUDGET_USD": "0"},
+        {"EMBEDDING_PRICE_PER_MILLION_USD": "nan"},
+        {"EMBEDDING_PRICE_VERIFIED_DATE": "2020-01-01"},
+    ],
+)
+def test_openai_requires_explicit_budget_configuration(override: dict[str, str]) -> None:
+    values = {
+        "DATABASE_URL": "postgresql://runtime:secret@postgres/reposcope",
+        "REDIS_URL": "redis://redis:6379/0",
+        "NATS_URL": "nats://nats:4222",
+        "ROLE": "indexer",
+        "PROVIDER_MODE": "openai",
+        "ALLOW_PAID_API_CALLS": "true",
+        "OPENAI_API_KEY": "test-key",
+        "EMBEDDING_DAILY_BUDGET_USD": "1.00",
+        "EMBEDDING_PRICE_PER_MILLION_USD": "0.02",
+        "EMBEDDING_PRICE_VERIFIED_DATE": datetime.now(UTC).date().isoformat(),
+        **override,
+    }
+    with pytest.raises(SettingsValidationError):
+        RuntimeSettings.from_values(values)
 
 
 @pytest.mark.parametrize(

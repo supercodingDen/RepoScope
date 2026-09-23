@@ -27,6 +27,7 @@ from reposcope.domain.source_snapshot import (
     SourceManifest,
     SourceSnapshot,
 )
+from reposcope.ports.index import SourceMonitor
 
 
 def _ordinary(path: Path, *, directory: bool = False) -> os.stat_result:
@@ -171,7 +172,7 @@ class SourceStore:
                 self._remove_owned_tree(destination)
             raise
 
-    def validate(self, snapshot: SourceSnapshot, monitor: ProcessRunner | None = None) -> None:
+    def validate(self, snapshot: SourceSnapshot, monitor: SourceMonitor | None = None) -> None:
         safe_relative_path(snapshot.storage_key)
         limits = SourceLimits()
         if len(snapshot.manifest.files) > limits.file_count:
@@ -224,6 +225,31 @@ class SourceStore:
                     raise SourceRejected("SOURCE_SNAPSHOT_CORRUPT")
         except OSError:
             raise SourceRejected("SOURCE_SNAPSHOT_CORRUPT") from None
+
+    def read_blob(
+        self, snapshot: SourceSnapshot, file: SourceFile, monitor: SourceMonitor | None = None
+    ) -> bytes:
+        """Read one verified immutable blob without following manifest paths."""
+        if file not in snapshot.file_index:
+            raise SourceRejected("SOURCE_SNAPSHOT_CORRUPT")
+        safe_relative_path(snapshot.storage_key)
+        if re.fullmatch(r"[a-f0-9]{64}", file.sha256) is None:
+            raise SourceRejected("SOURCE_SNAPSHOT_CORRUPT")
+        path = self.root / snapshot.storage_key / "blobs" / file.sha256
+        try:
+            if monitor is not None:
+                monitor.check_time()
+            info = _ordinary(path)
+            if info.st_size != file.size or file.size > SourceLimits().file_bytes:
+                raise SourceRejected("SOURCE_SNAPSHOT_CORRUPT")
+            content = path.read_bytes()
+            if monitor is not None:
+                monitor.check_time()
+        except OSError:
+            raise SourceRejected("SOURCE_SNAPSHOT_CORRUPT") from None
+        if len(content) != file.size or hashlib.sha256(content).hexdigest() != file.sha256:
+            raise SourceRejected("SOURCE_SNAPSHOT_CORRUPT")
+        return content
 
     def cleanup_snapshot_attempt(self, job_id: UUID, token: int) -> None:
         """Only after the repository proves this token obsolete and unreferenced."""

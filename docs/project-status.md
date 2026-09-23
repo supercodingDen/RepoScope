@@ -1,19 +1,44 @@
 # Project status
 
-Milestone: **T04 and T05 implemented and verified in the native Windows environment**.
+Milestone: **T06 bounded indexing implemented and verified in the native Windows environment**.
 Verification date: 2026-09-23 UTC. Working project: `D:\RepoScope_project\reposcope`.
+
+## T06 delivery and verification
+
+- A third durable source-continuation consumer turns verified T05 blobs into AST-aware or labeled-fallback chunks with exact byte/line citations. Its index attempts are independent of source-acquisition attempts.
+- Migration `0005_index` adds per-file fenced checkpoints, 384-dimensional vectors, full-text/HNSW indexes, versioned vector reuse and durable paid-call reservations. A final transaction publishes a complete ready generation, job and active pointer together; superseded generations do not take over.
+- Default mock embeddings are deterministic and incur no provider cost. A live adapter is available only with an explicit key, paid opt-in, current operator-supplied price and UTC daily ceiling. No live provider call or quality evaluation was executed.
+- Real PostgreSQL/NATS tests cover duplicate-content citations, replay, stale fences, fifth source attempt, supersession, empty generations and budget accounting. The full native integration suite and offline suite pass. The 10K/50K benchmark parsed distinct files from version-pinned CPython 3.12.14 and locked public package code in one pass, without replay or generated content. It measures parsing/embedding memory and vector cardinality, not a 50K-row database load.
+
+| T06 check | Executed result |
+| --- | --- |
+| Local pytest, including opt-in skips | 324 passed, 67 skipped |
+| Isolated PostgreSQL 17/pgvector 0.8.6, NATS 2.14.7 and real public GitHub source | 64 passed in 58.60 s |
+| Strict mypy, Ruff lint and formatting | Passed; 87 Python files type-checked for Windows and Linux targets, 117 files formatted |
+| Contract exports and semantic validation | 48 current files; 20 schema/example pairs and 2 OpenAPI documents valid |
+| Redacted source-only Gitleaks | 194 reviewed files, approximately 1.06 MB scanned; no leaks found |
+| Independent review | [All Important findings fixed](verification/t06-review.md) and closure reviewed; no remaining Critical or Important finding |
+
+| T06 native scale gate | Actual chunks/vectors | Files | Time | Peak process working set |
+| --- | ---: | ---: | ---: | ---: |
+| 10K | 10,012 / 10,012 | 332 | 21.437 s | 156,184,576 bytes |
+| 50K | 50,007 / 50,007 | 1,705 | 112.125 s | 184,516,608 bytes |
+
+The scale input comprised 4,804 eligible files; the checked source fingerprint was `159dcd550b7f2ec53802f11c65859d7bcab5eba082a8eb21a5a19119aa515c86`. Peak traced Python allocations were 21,253,086 and 26,400,487 bytes respectively. The benchmark made no provider request. [Machine-readable scale evidence](verification/t06-scale.json) records the measurements. Database cardinality is verified on smaller real-PostgreSQL end-to-end fixtures; a 50K-row PostgreSQL/HNSW ingestion run remains unexecuted.
+
+Usage: [T06 indexing](t06-indexing.md). The older T04/T05 evidence below remains as the historical acceptance record.
 
 ## Delivered
 
 - T04: transactional outbox publication, bounded durable JetStream consumers, renewable fenced leases, durable retries, completion-before-ACK, safe quarantine and stalled-work reconciliation.
 - T05: canonical public GitHub admission, immutable commit pinning, isolated blobless Git acquisition, controlled public-IP transport and download accounting, file/path/secret exclusions, process-tree termination and bounded storage.
-- Deterministic source manifests and scoped durable `repo.source.acquired` continuations committed atomically with source-stage completion. Public sources are staged for T06; no index-ready or completed-agent result is fabricated.
+- Deterministic source manifests and scoped durable `repo.source.acquired` continuations committed atomically with source-stage completion. T06 now consumes this staged handoff.
 - Operator-only local snapshot CLI, authoritative obsolete/terminal cleanup, transient cleanup recovery and safe finalization rollback.
 - Additive migrations0003/0004, exported contracts, runtime configuration, source volume/indexer egress, pinned Git/CA dependencies and smoke-test updates.
 
 Usage: [durable delivery](t04-delivery.md), [source acquisition and local import](t05-acquisition.md), [existing HTTP API](t03-api.md). Scope proof: [acceptance ledger](plans/2026-09-22-t04-t05-acceptance.md).
 
-## Executed verification
+## T04/T05 executed verification
 
 | Check | Actual result |
 | --- | --- |
@@ -41,6 +66,6 @@ Disk limits are enforced by monitoring and finalization checks, with possible tr
 
 ## Next milestone
 
-T06: bounded indexing/chunking, reproducible embeddings and atomic ready-generation publication. Until T06 is implemented, source acquisition stops at the durable staged handoff; the original overall job deadline still applies. T08 agent execution is also not implemented by this delivery.
+T07: scoped retrieval over ready generations with source-grounded citations. T08 agent execution is also not implemented by this delivery. The original overall job deadline still applies to source acquisition and indexing.
 
 The reviewed source was synchronized to the owner's private GitHub repository, `supercodingDen/RepoScope`, on 2026-09-23 UTC (initial import commit `2c0e6f015588db0906c8ba50cb0448e5a505acfe`). The D-drive extraction has no persistent local Git history; synchronization used the connected GitHub integration. Public release, PR, hosted deployment and system installation were not performed. Remote CI results have not been verified. Earlier T03 evidence remains in `docs/verification/t03-checks.txt`, `t03-native-checks.txt` and the T03 API guide.

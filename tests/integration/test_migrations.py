@@ -77,7 +77,7 @@ async def test_migrations_are_idempotent_atomic_and_restrict_runtime_role() -> N
     second_run = await run_migrations(config)
 
     assert set(first_run.applied_versions).issubset(
-        {"0001_bootstrap", "0002_core", "0003_delivery", "0004_source"}
+        {"0001_bootstrap", "0002_core", "0003_delivery", "0004_source", "0005_index"}
     )
     assert second_run.applied_versions == ()
 

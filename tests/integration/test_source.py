@@ -16,12 +16,15 @@ from psycopg import OperationalError
 from psycopg.errors import CheckViolation
 
 from contracts.models import SourceAcquired
+from reposcope.adapters.embedding import MockEmbeddingProvider
 from reposcope.adapters.nats_delivery import JetStreamBroker
 from reposcope.adapters.postgres_delivery import PostgresDeliveryRepository
+from reposcope.adapters.postgres_index import PostgresIndexRepository
 from reposcope.adapters.postgres_source import PostgresSourceRepository
 from reposcope.adapters.source_git import GitSource
 from reposcope.adapters.source_storage import SnapshotBuilder, SourceStore
 from reposcope.application.delivery import DeliveryWorker, OutboxPublisher
+from reposcope.application.index import IndexHandler
 from reposcope.application.source import SourceAcquisitionHandler
 from reposcope.domain.delivery import Lease, LeaseLost, Outcome, Staged, TransientFailure
 from reposcope.domain.source import SourceLimits, SourceRejected
@@ -211,6 +214,29 @@ async def test_api_broker_public_source_stage_handoff(
     cursor = await database.owner.execute("SELECT count(*)::text FROM reposcope.source_manifests")
     assert await cursor.fetchone() == ("1",)
     assert await source.cleanup_candidates() == ()
+    index_worker = DeliveryWorker(
+        delivery,
+        broker,
+        "source",
+        IndexHandler(PostgresIndexRepository(delivery), backend.store, MockEmbeddingProvider()),
+    )
+    source_message = await broker.fetch_one("source")
+    assert source_message is not None
+    await index_worker.process(source_message)
+    assert await delivery.completed("source", acquired.event_id)
+    cursor = await database.owner.execute(
+        "SELECT j.status,g.status,r.active_generation_id::text "
+        "FROM reposcope.jobs j JOIN reposcope.index_generations g "
+        "ON g.generation_id=j.generation_id "
+        "JOIN reposcope.repositories r ON r.repository_id=j.repository_id"
+    )
+    assert await cursor.fetchone() == ("succeeded", "ready", str(acquired.payload.generation_id))
+    cursor = await database.owner.execute(
+        "SELECT count(*)::text FROM reposcope.index_chunks WHERE generation_id=%s",
+        (acquired.payload.generation_id,),
+    )
+    indexed = await cursor.fetchone()
+    assert indexed is not None and int(indexed[0]) > 0
 
 
 class _MovingSource:
