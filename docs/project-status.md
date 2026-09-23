@@ -1,7 +1,24 @@
 # Project status
 
-Milestone: **T09 durable run events and CLI demonstration implemented in the native Windows environment**.
+Milestone: **T10 operations visibility and fault acceptance implemented in the native Windows environment**.
 Verification date: 2026-09-23 UTC. Working project: `D:\RepoScope_project\reposcope`.
+
+## T10 delivery and verification
+
+- Private Prometheus metrics now report canonical-route HTTP counts and header latency, dependency readiness, admission rejections, outbox/worker outcomes, and a 15-second PostgreSQL backlog snapshot. A failed snapshot sets its up gauge to zero and backlog gauges to NaN; public HTTP does not expose `/metrics`.
+- Structured logs retain safe request/event identifiers and error codes while rejecting untrusted event text, invalid IDs and connection details. All mapped HTTP failures emit one correlated safe log entry.
+- Existing database admission and JetStream/worker limits were verified under saturation and replay. New native fault checks cover a provider failure after a durable reservation, a closed database pool changing readiness to 503, and a persisted NATS message consumed and acknowledged after broker restart. The [T10 operations guide](t10-operations.md) maps every claimed failure boundary to executed tests.
+
+| T10 check | Executed result |
+| --- | --- |
+| Full offline pytest | 354 passed, 80 opt-in skipped |
+| Native PostgreSQL/NATS/public GitHub integration | 83 passed, 1 optional benchmark skipped in 87.49 s |
+| Strict mypy, Ruff lint/format | Windows and Linux targets passed; 116 Python files type-checked, 159 formatted |
+| Contracts | 48 exports current; 20 schema/example pairs and 2 OpenAPI documents validated |
+| Independent review | Four fault-evidence/logging findings fixed and rechecked; no remaining Critical or Important finding |
+| Redacted source-only Gitleaks | 242 reviewed files, approximately 1.26 MB scanned; no leaks found |
+
+Docker/Compose smoke remains unexecuted: the `docker` command is unavailable on this machine. No paid provider call was made.
 
 ## T09 delivery and verification
 
@@ -115,6 +132,6 @@ Disk limits are enforced by monitoring and finalization checks, with possible tr
 
 ## Next milestone
 
-T10: metrics/logging, admission/backpressure, dependency outages, and crash-recovery fault matrix. Later performance gates remain open. The original overall job deadline still applies to source acquisition and indexing.
+T11: public access, image/dependency/secret scans, endpoint and resource security review. Later performance gates remain open. The original overall job deadline still applies to source acquisition and indexing.
 
 The reviewed source is synchronized to the owner's private GitHub repository, `supercodingDen/RepoScope`, after each complete task. The D-drive extraction has no persistent local Git history; synchronization uses the connected GitHub integration. Public release, PR, hosted deployment and system installation were not performed. Remote CI results have not been verified. Earlier T03 evidence remains in `docs/verification/t03-checks.txt`, `t03-native-checks.txt` and the T03 API guide.

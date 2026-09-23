@@ -3,16 +3,21 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import socket
 import subprocess
 import sys
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 
+from contracts.examples import EXAMPLES
+from contracts.models import IngestRequested
+from reposcope.adapters.nats_delivery import JetStreamBroker
 from reposcope.logging_config import configure_logging
-from reposcope.runtime import RuntimeResources
+from reposcope.runtime import ManagedDependencyProbe, RuntimeResources
 from reposcope.settings import RuntimeSettings
 
 pytestmark = pytest.mark.integration
@@ -85,7 +90,15 @@ async def test_real_jetstream_client_recovers_after_broker_restart(tmp_path: Pat
             }
         )
         resources = await RuntimeResources.connect(settings)
+        assert isinstance(resources.probe, ManagedDependencyProbe)
         assert await _jetstream_available(resources)
+        namespace = "recovery_" + uuid4().hex
+        broker = JetStreamBroker(resources.probe.nats_client, namespace=namespace)
+        await broker.setup()
+        event = IngestRequested.model_validate_json(
+            json.dumps(EXAMPLES["IngestRequested"])
+        ).model_copy(update={"event_id": uuid4()})
+        await broker.publish(event)
         await asyncio.to_thread(_stop_server, process)
         await asyncio.sleep(0.1)
         assert not await _jetstream_available(resources)
@@ -95,6 +108,15 @@ async def test_real_jetstream_client_recovers_after_broker_restart(tmp_path: Pat
             while not await _jetstream_available(resources):
                 await asyncio.sleep(0.2)
         assert await _jetstream_available(resources)
+        recovered = JetStreamBroker(resources.probe.nats_client, namespace=namespace)
+        await recovered.setup()
+        async with asyncio.timeout(10):
+            message = None
+            while message is None:
+                message = await recovered.fetch_one("indexer")
+        assert message.data == event.model_dump_json().encode()
+        await message.ack_sync()
+        assert (await recovered.consumer_info("indexer")).num_ack_pending == 0
     finally:
         if resources is not None:
             await resources.close()

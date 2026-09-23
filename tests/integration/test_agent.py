@@ -19,7 +19,7 @@ from reposcope.adapters.postgres_retrieval import PostgresRetrievalRepository
 from reposcope.application.agent import AgentHandler, ModelTurn
 from reposcope.application.index import IndexHandler
 from reposcope.application.retrieval import RetrievalService
-from reposcope.domain.delivery import Complete, Lease, Staged
+from reposcope.domain.delivery import Complete, Lease, PermanentFailure, Staged
 from reposcope.domain.errors import WorkError
 from tests.integration.test_index import staged_files
 from tests.integration.test_work_persistence import DatabaseHarness, database
@@ -280,3 +280,66 @@ async def test_luna_path_reserves_before_fake_provider_and_settles_usage(
     settled = await cursor.fetchone()
     assert settled is not None
     assert settled[0] == "settled" and int(settled[1]) == 700 and int(settled[2]) == 100
+
+
+@pytest.mark.asyncio
+async def test_provider_outage_keeps_reserved_cost_and_commits_safe_failure(
+    database: DatabaseHarness, tmp_path: Path
+) -> None:
+    delivery, store, source_event = await staged_files(
+        database, tmp_path, {"answer.py": b"answer = 42\n"}
+    )
+    source_lease = await delivery.claim(source_event, "source", uuid4())
+    assert isinstance(source_lease, Lease)
+    assert isinstance(
+        await IndexHandler(
+            PostgresIndexRepository(delivery), store, MockEmbeddingProvider()
+        ).handle(source_lease),
+        Staged,
+    )
+    accepted = await database.client.post(
+        "/v1/runs",
+        headers={"Idempotency-Key": "agent-provider-outage"},
+        json={"repository_id": str(source_event.payload.repository_id), "question": "answer?"},
+    )
+    assert accepted.status_code == 202
+    run_id = UUID(accepted.json()["run_id"])
+    cursor = await database.owner.execute(
+        "SELECT payload::text FROM reposcope.outbox_events WHERE run_id=%s", (run_id,)
+    )
+    row = await cursor.fetchone()
+    assert row is not None
+    event = AgentRequested.model_validate_json(row[0])
+    lease = await delivery.claim(event, "agent", uuid4())
+    assert isinstance(lease, Lease)
+
+    class BrokenProvider:
+        model = "gpt-5.6-luna"
+
+        async def respond(self, history: list[dict[str, object]]) -> ModelTurn:
+            raise ConnectionError("provider key must never be logged")
+
+    outcome = await AgentHandler(
+        PostgresAgentRepository(delivery),
+        RetrievalService(PostgresRetrievalRepository(database.pool), MockEmbeddingProvider()),
+        store,
+        BrokenProvider(),
+        Decimal("0.20"),
+        Decimal("1.20"),
+        datetime.now(UTC).date(),
+    ).handle(lease)
+    assert outcome == PermanentFailure("PROVIDER_UNAVAILABLE")
+    await delivery.finalize(lease, outcome)
+    cursor = await database.owner.execute(
+        "SELECT state,reserved_usd::text FROM reposcope.model_attempts WHERE run_id=%s", (run_id,)
+    )
+    attempt = await cursor.fetchone()
+    assert attempt is not None and attempt[0] == "uncertain" and Decimal(attempt[1]) > 0
+    response = await database.client.get(f"/v1/runs/{run_id}")
+    assert response.status_code == 200 and response.json()["failure_code"] == "PROVIDER_UNAVAILABLE"
+    assert "provider key" not in response.text
+    cursor = await database.owner.execute(
+        "SELECT kind FROM reposcope.run_events WHERE run_id=%s ORDER BY sequence DESC LIMIT 1",
+        (run_id,),
+    )
+    assert await cursor.fetchone() == ("run.failed",)

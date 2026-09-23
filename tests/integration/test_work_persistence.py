@@ -29,7 +29,7 @@ from reposcope.application.work import AdmissionPolicy, WorkService
 from reposcope.infrastructure.db.migrate import run_migrations
 from reposcope.runtime import RuntimeResources
 from reposcope.settings import RuntimeSettings
-from reposcope.transport.http.app import create_public_application
+from reposcope.transport.http.app import create_health_application, create_public_application
 from tests.integration.test_migrations import _integration_configuration
 
 pytestmark = pytest.mark.integration
@@ -371,6 +371,30 @@ async def test_shared_capacity_and_budget_races(database: DatabaseHarness) -> No
 
 
 @pytest.mark.asyncio
+async def test_capacity_rejects_new_work_but_preserves_idempotent_replay(
+    database: DatabaseHarness,
+) -> None:
+    async with another_client(database, policy=AdmissionPolicy(pending_limit=1)) as http:
+        request = {"url": "https://github.com/example/first"}
+        first = await http.post(
+            "/v1/repositories", json=request, headers={"Idempotency-Key": "one-slot"}
+        )
+        assert first.status_code == 202
+        rejected = await http.post(
+            "/v1/repositories",
+            json={"url": "https://github.com/example/second"},
+            headers={"Idempotency-Key": "next-slot"},
+        )
+        assert rejected.status_code == 429
+        replay = await http.post(
+            "/v1/repositories", json=request, headers={"Idempotency-Key": "one-slot"}
+        )
+        assert replay.status_code == 202 and replay.content == first.content
+    assert await count(database, "jobs") == 1
+    assert await count(database, "outbox_events") == 1
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("state", ["reserved", "settled", "uncertain", "released"])
 async def test_conservative_reservation_states_and_project_window(
     database: DatabaseHarness, state: str
@@ -423,7 +447,32 @@ async def test_database_scope_status_and_pinned_revision_constraints(
 
 @pytest.mark.asyncio
 async def test_closed_database_pool_is_safe_unavailable(database: DatabaseHarness) -> None:
-    await database.pool.close()
+    class DatabaseReadiness:
+        async def database_migrated(self, version: str) -> bool:
+            async with database.pool.connection(timeout=0.1) as connection:
+                cursor = await connection.execute(
+                    "SELECT 1 FROM reposcope.schema_migrations WHERE version=%s", (version,)
+                )
+                return await cursor.fetchone() is not None
+
+        async def redis_available(self) -> bool:
+            return True
+
+        async def jetstream_available(self) -> bool:
+            return True
+
+        async def close(self) -> None:
+            return None
+
+    health = create_health_application(
+        RuntimeResources(DatabaseReadiness(), 0.1), include_metrics=False
+    )
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=health), base_url="http://test"
+    ) as observer:
+        assert (await observer.get("/readyz")).status_code == 200
+        await database.pool.close()
+        assert (await observer.get("/readyz")).status_code == 503
     response = await database.client.post(
         "/v1/repositories",
         json={"url": "https://github.com/a/b"},

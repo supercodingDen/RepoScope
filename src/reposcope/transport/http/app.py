@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import secrets
+import time
 from collections.abc import AsyncGenerator, Awaitable, Callable, Mapping
 from uuid import UUID, uuid4
 
@@ -32,6 +33,7 @@ from contracts.models import (
 from reposcope.application.run_stream import RunStream
 from reposcope.application.work import WorkService
 from reposcope.domain.errors import WorkError
+from reposcope.metrics import observe_admission_rejection, observe_http
 from reposcope.ports.retrieval import SearchWorkflow
 from reposcope.ports.run_events import RunEventStore
 from reposcope.runtime import RuntimeResources
@@ -241,11 +243,20 @@ def _install_request_context(application: FastAPI) -> None:
 
     @application.middleware("http")
     async def request_context(request: Request, call_next: RequestHandler) -> Response:
+        started = time.perf_counter()
         request_id = _request_id(request.headers.get("X-Request-ID"))
         request.state.request_id = request_id
-        response = await call_next(request)
-        response.headers["X-Request-ID"] = str(request_id)
-        return response
+        status = 500
+        try:
+            response = await call_next(request)
+            status = response.status_code
+            response.headers["X-Request-ID"] = str(request_id)
+            return response
+        finally:
+            if request.url.path.startswith("/v1/"):
+                observe_http(
+                    request.url.path, request.method, status, time.perf_counter() - started
+                )
 
 
 def _install_error_handlers(application: FastAPI) -> None:
@@ -253,6 +264,13 @@ def _install_error_handlers(application: FastAPI) -> None:
 
     @application.exception_handler(WorkError)
     async def work_error(request: Request, error: WorkError) -> JSONResponse:
+        if request.method == "POST" and request.url.path in {"/v1/repositories", "/v1/runs"}:
+            if error.code == "RATE_LIMITED":
+                observe_admission_rejection("capacity")
+            elif error.code == "BUDGET_EXCEEDED":
+                observe_admission_rejection("budget")
+            elif error.code == "DEPENDENCY_UNAVAILABLE":
+                observe_admission_rejection("dependency")
         headers = {"WWW-Authenticate": "Bearer"} if error.code == "UNAUTHENTICATED" else None
         if error.code in {"RATE_LIMITED", "BUDGET_EXCEEDED"}:
             headers = {"Retry-After": "1"}
@@ -319,10 +337,6 @@ def _install_error_handlers(application: FastAPI) -> None:
     @application.exception_handler(Exception)
     async def internal_error(request: Request, _: Exception) -> JSONResponse:
         """Return a secret-safe unexpected-error response and structured log entry."""
-        LOGGER.error(
-            "unhandled_request",
-            extra={"event": "unhandled_request", "request_id": str(_request_id_from(request))},
-        )
         return _problem_response(
             request,
             status=500,
@@ -348,6 +362,11 @@ def _problem_response(
         detail=detail,
         code=code,
         request_id=_request_id_from(request),
+    )
+    LOGGER.log(
+        logging.ERROR if status >= 500 else logging.WARNING,
+        "unhandled_request" if code == "INTERNAL_ERROR" else "request_rejected",
+        extra={"request_id": str(problem.request_id), "error_code": code},
     )
     response_headers = {"X-Request-ID": str(problem.request_id)}
     if headers is not None:

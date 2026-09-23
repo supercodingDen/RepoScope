@@ -23,6 +23,7 @@ from reposcope.adapters.openai_agent import OpenAIAgentProvider
 from reposcope.adapters.postgres_agent import PostgresAgentRepository
 from reposcope.adapters.postgres_delivery import PostgresDeliveryRepository
 from reposcope.adapters.postgres_index import PostgresIndexRepository
+from reposcope.adapters.postgres_operations import PostgresOperationalRepository
 from reposcope.adapters.postgres_retrieval import PostgresRetrievalRepository
 from reposcope.adapters.postgres_run_events import PostgresRunEvents
 from reposcope.adapters.postgres_source import PostgresSourceRepository
@@ -32,6 +33,7 @@ from reposcope.adapters.source_storage import SourceStore
 from reposcope.application.agent import AgentHandler
 from reposcope.application.delivery import DeliveryWorker, OutboxPublisher, pause, run_reconciler
 from reposcope.application.index import IndexHandler
+from reposcope.application.operations import OperationalSampler
 from reposcope.application.retrieval import RetrievalService
 from reposcope.application.source import SourceAcquisitionHandler
 from reposcope.application.work import WorkService
@@ -66,6 +68,11 @@ async def run_role(settings: RuntimeSettings) -> None:
                 broker = JetStreamBroker(resources.probe.nats_client)
                 await broker.setup()
                 if settings.role == "api":
+                    group.create_task(
+                        OperationalSampler(
+                            PostgresOperationalRepository(resources.probe.database_pool)
+                        ).run(stopping)
+                    )
                     group.create_task(OutboxPublisher(repository, broker).run(stopping))
                     group.create_task(run_reconciler(repository, stopping))
                     group.create_task(

@@ -18,6 +18,7 @@ from reposcope.adapters.nats_delivery import JetStreamBroker
 from reposcope.adapters.postgres_delivery import PostgresDeliveryRepository
 from reposcope.application.delivery import DeliveryWorker, OutboxPublisher
 from reposcope.domain.delivery import Complete, Lease, LeaseLost, Outcome, PermanentFailure
+from reposcope.metrics import DELIVERY_OUTCOMES, PUBLISH_OUTCOMES
 from tests.integration.test_nats_recovery import _start_server, _stop_server, _wait_for_port
 from tests.integration.test_work_persistence import DatabaseHarness, database, ingest, ready
 
@@ -72,6 +73,10 @@ async def event_for(db: DatabaseHarness) -> IngestRequested:
 async def test_publish_ack_gap_and_completion_ack_gap_are_idempotent(
     database: DatabaseHarness, broker: JetStreamBroker
 ) -> None:
+    published_before = PUBLISH_OUTCOMES.labels(outcome="published")._value.get()
+    duplicate_before = DELIVERY_OUTCOMES.labels(
+        consumer="indexer", outcome="duplicate"
+    )._value.get()
     accepted = await ingest(database)
     await ready(database, accepted)
     await database.owner.execute("UPDATE reposcope.jobs SET status='queued'")
@@ -84,6 +89,7 @@ async def test_publish_ack_gap_and_completion_ack_gap_are_idempotent(
         "UPDATE reposcope.outbox_events SET lease_until=now()-interval '1 second'"
     )
     assert await publisher.publish_one()
+    assert PUBLISH_OUTCOMES.labels(outcome="published")._value.get() == published_before + 1
     with pytest.raises(LeaseLost):
         await repo.mark_published(claim)
     assert (await broker.client.jetstream().stream_info(broker.stream)).state.messages == 1
@@ -100,6 +106,10 @@ async def test_publish_ack_gap_and_completion_ack_gap_are_idempotent(
     handler = Succeed()
     await DeliveryWorker(repo, broker, "indexer", handler).process(duplicate)
     assert handler.calls == 0
+    assert (
+        DELIVERY_OUTCOMES.labels(consumer="indexer", outcome="duplicate")._value.get()
+        == duplicate_before + 1
+    )
     assert await repo.completed("indexer", event.event_id)
     assert (await broker.consumer_info("indexer")).num_ack_pending == 0
     cursor = await database.owner.execute(

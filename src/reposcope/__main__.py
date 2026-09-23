@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+import re
 import sys
 from collections.abc import Sequence
 from dataclasses import replace
@@ -26,9 +27,15 @@ def main(arguments: Sequence[str] | None = None) -> int:
     try:
         settings = replace(RuntimeSettings.from_environment(), role=parsed.role)
     except SettingsValidationError as error:
+        missing = re.fullmatch(
+            r"Missing required setting: (DATABASE_URL|REDIS_URL|NATS_URL)\.", str(error)
+        )
         LOGGER.error(
             "startup_configuration_invalid",
-            extra={"code": "CONFIGURATION_INVALID", "configuration_error": str(error)},
+            extra={
+                "code": "CONFIGURATION_INVALID",
+                "configuration_error": missing.group(1) if missing else "UNSPECIFIED",
+            },
         )
         return 1
     try:

@@ -1,0 +1,10 @@
+T10 verification, 2026-09-23 UTC, D:\RepoScope_project\reposcope
+
+Offline pytest: 354 passed, 80 opt-in integration cases skipped.
+Native Windows PostgreSQL 17/pgvector 0.8.6, NATS 2.14.7 and pinned public GitHub source: 83 passed, 1 optional benchmark skipped in 87.49 s.
+Strict mypy: 116 source files passed for Windows and Linux targets.
+Ruff lint and format: passed; 159 Python files formatted.
+Contracts: 48 current exports; 20 schema/example pairs and 2 OpenAPI documents validated.
+Independent review: four findings resolved and independently rechecked; no remaining Critical or Important issue.
+Source-only redacted Gitleaks: 242 reviewed files, approximately 1.26 MB; no leaks found.
+No live paid provider calls. Docker/Compose smoke unexecuted because the docker command is not available.

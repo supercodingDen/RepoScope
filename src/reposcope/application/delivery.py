@@ -21,6 +21,7 @@ from reposcope.domain.delivery import (
     parse_event,
     retry_delay,
 )
+from reposcope.metrics import observe_delivery, observe_publication
 from reposcope.ports.delivery import DeliveryBroker, DeliveryMessage, DeliveryRepository
 
 LOGGER = logging.getLogger("reposcope.delivery")
@@ -44,9 +45,11 @@ class OutboxPublisher:
         try:
             await self.broker.publish(claim.event)
             await self.repository.mark_published(claim)
+            observe_publication("published")
         except asyncio.CancelledError:
             raise
         except Exception:
+            observe_publication("retry")
             await self.repository.retry_publication(claim, retry_delay(claim.attempt))
             LOGGER.warning(
                 "publication_retry",
@@ -98,22 +101,27 @@ class DeliveryWorker:
             await self.repository.quarantine(message.data, self.consumer, "INVALID_EVENT")
             await message.term()
             await self.broker.flush()
+            observe_delivery(self.consumer, "quarantined")
             return
         if not await self.repository.authorized(event):
             await self.repository.quarantine(message.data, self.consumer, "UNAUTHORIZED_EVENT")
             await message.term()
             await self.broker.flush()
+            observe_delivery(self.consumer, "quarantined")
             return
         if await self.repository.completed(self.consumer, event.event_id):
             await message.ack_sync()
+            observe_delivery(self.consumer, "duplicate")
             return
         if not self.handler.configured:
             await message.nak(delay=30)
+            observe_delivery(self.consumer, "deferred")
             return
         lease = await self.repository.claim(event, self.consumer, self.owner)
         if lease is None:
             # Another attempt owns the lease or the persisted backoff is still active.
             await message.nak(delay=5)
+            observe_delivery(self.consumer, "deferred")
             return
         try:
             outcome = await self._handle(lease, message)
@@ -125,6 +133,7 @@ class DeliveryWorker:
                     lease, min(30, max(1, outcome.delay_seconds)), refund_attempt=True
                 )
                 await message.nak(delay=min(30, max(1, outcome.delay_seconds)))
+                observe_delivery(self.consumer, "deferred")
                 return
             elif isinstance(outcome, TransientFailure):
                 await self._retry(lease, message)
@@ -132,12 +141,22 @@ class DeliveryWorker:
             else:
                 await self.repository.finalize(lease, outcome)
             await message.ack_sync()
+            observe_delivery(
+                self.consumer,
+                "staged"
+                if isinstance(outcome, Staged)
+                else "failed"
+                if isinstance(outcome, PermanentFailure)
+                else "completed",
+            )
         except asyncio.CancelledError:
+            observe_delivery(self.consumer, "cancelled")
             # Shutdown is never a business failure. Best-effort release; expiry is the fallback.
             with contextlib.suppress(Exception):
                 await self.repository.release(lease, 1, refund_attempt=True)
             raise
         except LeaseLost:
+            observe_delivery(self.consumer, "lease_lost")
             # No ACK: a new owner or reconciler controls recovery.
             LOGGER.warning(
                 "lease_lost", extra={"event_id": str(event.event_id), "error_code": "LEASE_LOST"}
@@ -154,10 +173,12 @@ class DeliveryWorker:
         if lease.attempt >= self.repository.policy.max_attempts:
             await self.repository.finalize(lease, PermanentFailure("ATTEMPTS_EXHAUSTED"))
             await message.ack_sync()
+            observe_delivery(self.consumer, "failed")
             return
         delay = retry_delay(lease.attempt)
         await self.repository.release(lease, delay)
         await message.nak(delay=delay)
+        observe_delivery(self.consumer, "retry")
 
     async def _handle(self, lease: Lease, message: DeliveryMessage) -> Outcome:
         async def heartbeat() -> None:

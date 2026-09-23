@@ -14,6 +14,7 @@ from nats.aio.client import Client as NatsClient
 from psycopg import AsyncConnection
 from psycopg_pool import AsyncConnectionPool
 
+from reposcope.metrics import DEPENDENCY_READY
 from reposcope.settings import RuntimeSettings
 
 INITIAL_MIGRATION_VERSION = "0007_run_events"
@@ -155,7 +156,15 @@ class RuntimeResources:
         except asyncio.CancelledError:
             raise
         except Exception:
+            for name in ("database", "redis", "jetstream"):
+                DEPENDENCY_READY.labels(dependency=name).set(0)
             return False
+        for name, available in (
+            ("database", database),
+            ("redis", redis_ready),
+            ("jetstream", jetstream),
+        ):
+            DEPENDENCY_READY.labels(dependency=name).set(int(available))
         return database and redis_ready and jetstream
 
     async def _bounded(self, operation: Awaitable[bool]) -> bool:
