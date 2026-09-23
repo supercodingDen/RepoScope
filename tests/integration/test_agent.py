@@ -29,6 +29,49 @@ __all__ = ["database"]
 
 
 @pytest.mark.asyncio
+async def test_one_hop_chunks_use_only_pinned_manifest_imports(
+    database: DatabaseHarness, tmp_path: Path
+) -> None:
+    delivery, store, source_event = await staged_files(
+        database,
+        tmp_path,
+        {
+            "src/main.ts": b"import { answer } from './answer'\nimport 'external'\n",
+            "src/answer.ts": b"export const answer = 42\n",
+            "src/unused.ts": b"export const unused = 1\n",
+        },
+    )
+    source_lease = await delivery.claim(source_event, "source", uuid4())
+    assert isinstance(source_lease, Lease)
+    assert isinstance(
+        await IndexHandler(
+            PostgresIndexRepository(delivery), store, MockEmbeddingProvider()
+        ).handle(source_lease),
+        Staged,
+    )
+    accepted = await database.client.post(
+        "/v1/runs",
+        headers={"Idempotency-Key": "one-hop"},
+        json={"repository_id": str(source_event.payload.repository_id), "question": "answer?"},
+    )
+    assert accepted.status_code == 202
+    cursor = await database.owner.execute(
+        "SELECT payload::text FROM reposcope.outbox_events WHERE run_id=%s",
+        (UUID(accepted.json()["run_id"]),),
+    )
+    row = await cursor.fetchone()
+    assert row is not None
+    event = AgentRequested.model_validate_json(row[0])
+    lease = await delivery.claim(event, "agent", uuid4())
+    assert isinstance(lease, Lease)
+    repository = PostgresAgentRepository(delivery)
+    preparation = await repository.prepare(lease)
+    chunks = await repository.one_hop_chunks(lease, preparation, ("src/main.ts",))
+    assert [chunk.path for chunk in chunks] == ["src/answer.ts"]
+    assert all(chunk.generation_id == source_event.payload.generation_id for chunk in chunks)
+
+
+@pytest.mark.asyncio
 async def test_mock_agent_completes_pinned_run_and_preserves_citation(
     database: DatabaseHarness, tmp_path: Path
 ) -> None:
@@ -73,6 +116,16 @@ async def test_mock_agent_completes_pinned_run_and_preserves_citation(
     assert outcome.result.citations[0].generation_id == source_event.payload.generation_id
     assert outcome.result.estimated_cost_usd == "0.000000"
     await delivery.finalize(lease, outcome)
+    cursor = await database.owner.execute(
+        "SELECT sequence,kind FROM reposcope.run_events WHERE run_id=%s ORDER BY sequence",
+        (run_id,),
+    )
+    assert [(int(sequence), kind) for sequence, kind in await cursor.fetchall()] == [
+        (1, "run.started"),
+        (2, "tool.started"),
+        (3, "tool.completed"),
+        (4, "run.completed"),
+    ]
     result = await database.client.get(f"/v1/runs/{run_id}")
     assert result.status_code == 200
     assert result.json()["status"] == "succeeded"

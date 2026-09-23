@@ -102,7 +102,7 @@ def validate_embedding_response(
     return EmbeddingResponse(space, tuple(normalized))
 
 
-PARSER_VERSION = "tree-sitter-2026-09-v1"
+PARSER_VERSION = "tree-sitter-2026-09-v2"
 TOKENIZER_VERSION = "cl100k_base-v1"
 CHUNK_POLICY_VERSION = "ast-600-800-0-v1"
 TARGET_TOKENS = 600
@@ -178,9 +178,22 @@ def _segments(
 def _dependencies(language: str, content: str) -> tuple[str, ...]:
     if language == "python":
         matches = re.finditer(
-            r"(?m)^\s*(?:from\s+([\w.]+)\s+import\s+|import\s+([\w., ]+))", content
+            r"(?m)^\s*(?:from\s+([\w.]+)\s+import\s+([^\n#]+)|import\s+([\w., ]+))",
+            content,
         )
-        values = [match.group(1) or match.group(2).split(",", 1)[0].strip() for match in matches]
+        values: list[str] = []
+        for match in matches:
+            module, names, imported = match.groups()
+            if module is not None:
+                if module.strip("."):
+                    values.append(module)
+                elif names is not None:
+                    for name in names.split(","):
+                        identifier = name.strip().split(" ", 1)[0]
+                        if identifier.isidentifier():
+                            values.append(module + identifier)
+            elif imported is not None:
+                values.append(imported.split(",", 1)[0].strip())
     elif language in {"typescript", "tsx"}:
         values = re.findall(
             r"(?m)^\s*import\s+(?:[^\n]*?\s+from\s+)?['\"]([^'\"\n]{1,256})['\"]",

@@ -2,17 +2,21 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from decimal import ROUND_UP, Decimal
-from typing import cast
+from typing import Literal, cast
 
 from pydantic import TypeAdapter
 
-from contracts.models import AgentRequested
+from contracts.models import AgentRequested, SearchMatch, StartedData, ToolData
 from reposcope.adapters.postgres_delivery import PostgresDeliveryRepository
+from reposcope.adapters.postgres_run_events import append_run_event
 from reposcope.domain.delivery import Lease, LeaseLost
+from reposcope.domain.dependency import resolve_one_hop
 from reposcope.domain.errors import WorkError
+from reposcope.domain.retrieval import chunk_uuid
 from reposcope.domain.source_snapshot import SourceManifest, SourceSnapshot
 
 
@@ -67,7 +71,80 @@ class PostgresAgentRepository:
             raise LeaseLost()
         return AgentPreparation(question, SourceSnapshot(manifest, key), count, tuple(languages))
 
-    async def record_tool_step(self, lease: Lease) -> int:
+    async def one_hop_chunks(
+        self, lease: Lease, preparation: AgentPreparation, seed_paths: tuple[str, ...]
+    ) -> tuple[SearchMatch, ...]:
+        """Read at most four direct dependency chunks from the admitted generation."""
+        if not isinstance(lease.event, AgentRequested):
+            raise LeaseLost()
+        scope = lease.event.payload
+        allowed = frozenset(item.path for item in preparation.snapshot.manifest.files)
+        seeds = sorted(set(seed_paths) & allowed)[:12]
+        if not seeds:
+            return ()
+        async with self.delivery.transaction() as connection:
+            await self.delivery.lock_lease(connection, lease)
+            cursor = await connection.execute(
+                "SELECT path,dependencies::text FROM reposcope.index_files "
+                "WHERE generation_id=%s AND path=ANY(%s) ORDER BY path",
+                (scope.generation_id, seeds),
+            )
+            paths: set[str] = set()
+            dependency_rows = cast(list[tuple[str, str]], await cursor.fetchall())
+            for path, raw in dependency_rows:
+                parsed = json.loads(raw)
+                if isinstance(parsed, list):
+                    paths.update(
+                        resolve_one_hop(
+                            path,
+                            (value for value in parsed if isinstance(value, str)),
+                            allowed,
+                        )
+                    )
+            paths.difference_update(seeds)
+            if not paths:
+                return ()
+            cursor = await connection.execute(
+                "SELECT path,ordinal,start_line,end_line,chunk_text "
+                "FROM reposcope.index_chunks WHERE generation_id=%s AND path=ANY(%s) "
+                "ORDER BY path,ordinal LIMIT 4",
+                (scope.generation_id, sorted(paths)),
+            )
+            chunk_rows = cast(list[tuple[str, int, int, int, str]], await cursor.fetchall())
+            return tuple(
+                SearchMatch(
+                    chunk_id=chunk_uuid(scope.generation_id, path, ordinal),
+                    repository_id=scope.repository_id,
+                    generation_id=scope.generation_id,
+                    commit_sha=scope.commit_sha,
+                    path=path,
+                    start_line=start,
+                    end_line=end,
+                    score=0.0,
+                    content=content,
+                )
+                for path, ordinal, start, end, content in chunk_rows
+            )
+
+    async def record_started(self, lease: Lease, model: Literal["mock", "gpt-5.6-luna"]) -> None:
+        if not isinstance(lease.event, AgentRequested):
+            raise LeaseLost()
+        async with self.delivery.transaction() as connection:
+            await self.delivery.lock_lease(connection, lease)
+            cursor = await connection.execute(
+                "SELECT 1 FROM reposcope.run_events WHERE run_id=%s AND kind='run.started'",
+                (lease.event.payload.run_id,),
+            )
+            if await cursor.fetchone() is None:
+                await append_run_event(
+                    connection, lease.event.payload.run_id, StartedData(model=model)
+                )
+
+    async def record_tool_step(
+        self,
+        lease: Lease,
+        tool: Literal["search_code", "get_file", "get_repository_summary"] = "search_code",
+    ) -> int:
         if not isinstance(lease.event, AgentRequested):
             raise LeaseLost()
         async with self.delivery.transaction() as connection:
@@ -80,7 +157,29 @@ class PostgresAgentRepository:
             row = await cursor.fetchone()
             if row is None:
                 raise ValueError("Tool step limit exceeded")
-            return int(row[0])
+            step = int(row[0])
+            await append_run_event(
+                connection,
+                lease.event.payload.run_id,
+                ToolData(kind="tool.started", tool=tool, step=step),
+            )
+            return step
+
+    async def record_tool_completed(
+        self,
+        lease: Lease,
+        tool: Literal["search_code", "get_file", "get_repository_summary"],
+        step: int,
+    ) -> None:
+        if not isinstance(lease.event, AgentRequested):
+            raise LeaseLost()
+        async with self.delivery.transaction() as connection:
+            await self.delivery.lock_lease(connection, lease)
+            await append_run_event(
+                connection,
+                lease.event.payload.run_id,
+                ToolData(kind="tool.completed", tool=tool, step=step),
+            )
 
     async def reserved_cost(self, lease: Lease) -> Decimal:
         if not isinstance(lease.event, AgentRequested):

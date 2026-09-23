@@ -24,12 +24,13 @@ from reposcope.adapters.postgres_agent import PostgresAgentRepository
 from reposcope.adapters.postgres_delivery import PostgresDeliveryRepository
 from reposcope.adapters.postgres_index import PostgresIndexRepository
 from reposcope.adapters.postgres_retrieval import PostgresRetrievalRepository
+from reposcope.adapters.postgres_run_events import PostgresRunEvents
 from reposcope.adapters.postgres_source import PostgresSourceRepository
 from reposcope.adapters.postgres_work import PostgresWorkRepository
 from reposcope.adapters.source_git import GitSource
 from reposcope.adapters.source_storage import SourceStore
 from reposcope.application.agent import AgentHandler
-from reposcope.application.delivery import DeliveryWorker, OutboxPublisher, run_reconciler
+from reposcope.application.delivery import DeliveryWorker, OutboxPublisher, pause, run_reconciler
 from reposcope.application.index import IndexHandler
 from reposcope.application.retrieval import RetrievalService
 from reposcope.application.source import SourceAcquisitionHandler
@@ -67,6 +68,11 @@ async def run_role(settings: RuntimeSettings) -> None:
                 if settings.role == "api":
                     group.create_task(OutboxPublisher(repository, broker).run(stopping))
                     group.create_task(run_reconciler(repository, stopping))
+                    group.create_task(
+                        _prune_run_events(
+                            PostgresRunEvents(resources.probe.database_pool), stopping
+                        )
+                    )
                 else:
                     handler = delivery_handler(settings, repository)
                     if settings.role == "agent":
@@ -125,7 +131,12 @@ async def run_role(settings: RuntimeSettings) -> None:
                     if isinstance(resources.probe, ManagedDependencyProbe)
                     else None
                 )
-                public = create_public_application(resources, settings, service, retrieval)
+                events = (
+                    PostgresRunEvents(resources.probe.database_pool)
+                    if isinstance(resources.probe, ManagedDependencyProbe)
+                    else None
+                )
+                public = create_public_application(resources, settings, service, retrieval, events)
                 group.create_task(
                     _serve(
                         public,
@@ -174,6 +185,18 @@ def embedding_provider(
             ),
         )
     return MockEmbeddingProvider()
+
+
+async def _prune_run_events(store: PostgresRunEvents, stopping: asyncio.Event) -> None:
+    while not stopping.is_set():
+        try:
+            removed = await store.prune()
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            LOGGER.warning("run_event_prune_retry", extra={"error_code": "DEPENDENCY_UNAVAILABLE"})
+            removed = 0
+        await pause(stopping, 1 if removed == 1000 else 3600)
 
 
 def delivery_handler(settings: RuntimeSettings, repository: PostgresDeliveryRepository) -> Handler:

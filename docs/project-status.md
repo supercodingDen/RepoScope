@@ -1,7 +1,23 @@
 # Project status
 
-Milestone: **T08 pinned read-only agent implemented and verified in the native Windows environment**.
+Milestone: **T09 durable run events and CLI demonstration implemented in the native Windows environment**.
 Verification date: 2026-09-23 UTC. Working project: `D:\RepoScope_project\reposcope`.
+
+## T09 delivery and verification
+
+- Migration `0007_run_events` records ordered run and tool events, backfills a terminal event for historical runs, and stores expiring SSE connection leases. Terminal event and result/failure commit together; worker redelivery cannot append another terminal event.
+- Authenticated `GET /v1/runs/{run_id}/events` replays from `Last-Event-ID`, follows new events with keep-alives, and closes at terminal state. PostgreSQL enforces two connections per principal and twenty globally. Terminal timelines expire after 24 hours; a stale request returns HTTP 410.
+- The agent adds at most four chunks from one static Python/TypeScript dependency hop, using only the pinned generation's indexed metadata and manifest. Combined evidence remains limited to twelve chunks and 8,000 tokens.
+- The [CLI demo](t09-events-and-demo.md) imports a public GitHub repository through the API, waits for indexing, submits a run, resumes SSE, and prints immutable citations. Tests use a mock HTTP transport and make no paid provider calls.
+
+| T09 check | Executed result |
+| --- | --- |
+| Full offline pytest | 346 passed, 77 opt-in skipped |
+| Native PostgreSQL/NATS/public GitHub integration | 80 passed, 1 optional benchmark skipped in 84.75 s; final SSE integration rerun 2 passed |
+| Strict mypy, Ruff lint/format | Windows and Linux targets passed; 110 Python files type-checked, 150 formatted |
+| Contracts | 48 exports current; 20 schema/example pairs and 2 OpenAPI documents validated |
+| Redacted source-only Gitleaks | 232 reviewed files, approximately 1.23 MB scanned; no leaks found |
+| Independent review | CLI replay/failure and relative-import findings fixed; disconnect-path SSE lease cleanup retested |
 
 ## T08 delivery and verification
 
@@ -99,6 +115,6 @@ Disk limits are enforced by monitoring and finalization checks, with possible tr
 
 ## Next milestone
 
-T09: durable run-event replay, SSE and CLI reporting, plus same-generation one-hop context expansion. Later performance gates remain open. The original overall job deadline still applies to source acquisition and indexing.
+T10: metrics/logging, admission/backpressure, dependency outages, and crash-recovery fault matrix. Later performance gates remain open. The original overall job deadline still applies to source acquisition and indexing.
 
 The reviewed source is synchronized to the owner's private GitHub repository, `supercodingDen/RepoScope`, after each complete task. The D-drive extraction has no persistent local Git history; synchronization uses the connected GitHub integration. Public release, PR, hosted deployment and system installation were not performed. Remote CI results have not been verified. Earlier T03 evidence remains in `docs/verification/t03-checks.txt`, `t03-native-checks.txt` and the T03 API guide.

@@ -12,6 +12,7 @@ from contracts.models import (
     GetFileTool,
     RepositorySummary,
     SearchCodeTool,
+    SearchMatch,
     SearchRequest,
     SearchResponse,
 )
@@ -92,6 +93,26 @@ class AgentTools:
             total_tokens += count
             total_characters += len(content)
             self.evidence_tokens += count
+            self.evidence_chunks.add(match.chunk_id)
+        return response.model_copy(update={"results": bounded})
+
+    def add_expanded(
+        self, response: SearchResponse, candidates: tuple[SearchMatch, ...]
+    ) -> SearchResponse:
+        """Apply the same cumulative evidence budget to direct dependency chunks."""
+        bounded = list(response.results)
+        encoding = tiktoken.get_encoding("cl100k_base")
+        for match in candidates[:4]:
+            if match.chunk_id in self.evidence_chunks or len(self.evidence_chunks) >= 12:
+                continue
+            remaining = 8000 - self.evidence_tokens
+            if remaining < 1:
+                break
+            content, _ = _bounded_text(match.content, 12000, min(remaining, 4000))
+            if not content:
+                continue
+            bounded.append(match.model_copy(update={"content": content}))
+            self.evidence_tokens += len(encoding.encode(content))
             self.evidence_chunks.add(match.chunk_id)
         return response.model_copy(update={"results": bounded})
 

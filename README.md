@@ -2,7 +2,7 @@
 
 Event-driven code intelligence with source-grounded answers and bounded agent costs.
 
-**Current milestone: T08 — pinned, read-only agent execution.** T02 delivered the runtime, T03 persistent work admission, T04 durable event delivery, T05 pinned source acquisition, T06 bounded indexing, and T07 scoped retrieval. T08 processes admitted runs against their fixed generation with three read-only tools and durable model cost reservations. See [project status](docs/project-status.md) for executed checks and outstanding gates.
+**Current milestone: T09 — durable run progress and import-to-answer CLI.** T02 delivered the runtime, T03 persistent work admission, T04 durable event delivery, T05 pinned source acquisition, T06 bounded indexing, T07 scoped retrieval, and T08 pinned read-only agent execution. T09 adds authenticated resumable run events and same-generation one-hop evidence expansion. See [project status](docs/project-status.md) for executed checks and outstanding gates.
 
 ## Start
 
@@ -38,7 +38,7 @@ The last command needs a running Docker daemon and uses an isolated disposable C
 
 Three Python roles share typed contracts and a layered package: FastAPI API/control plane, indexer, and agent. PostgreSQL/pgvector owns durable state and admission, JetStream delivers durable work, and Redis is a disposable runtime dependency. Read [architecture](docs/architecture.md), [specification](docs/spec.md), and [roadmap](docs/roadmap.md).
 
-Source acquisition and indexing never execute repository code. The default embedding and agent providers are labeled mocks; answer quality is not inferred from them. Explicit live indexing, retrieval and agent calls require a local key, paid-call opt-in, current operator-verified prices and budgets. See [T06 indexing](docs/t06-indexing.md), [T07 retrieval](docs/t07-retrieval.md), and [T08 agent](docs/t08-agent.md). No paid provider call was made in local milestone checks.
+Source acquisition and indexing never execute repository code. The default embedding and agent providers are labeled mocks; answer quality is not inferred from them. Explicit live indexing, retrieval and agent calls require a local key, paid-call opt-in, current operator-verified prices and budgets. See [T06 indexing](docs/t06-indexing.md), [T07 retrieval](docs/t07-retrieval.md), [T08 agent](docs/t08-agent.md), and [T09 run events and demo](docs/t09-events-and-demo.md). No paid provider call was made in local milestone checks.
 
 ## Configuration and secrets
 

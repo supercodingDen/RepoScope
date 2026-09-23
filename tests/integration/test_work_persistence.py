@@ -23,6 +23,7 @@ from contracts.models import (
     RunCreate,
     RunView,
 )
+from reposcope.adapters.postgres_run_events import PostgresRunEvents
 from reposcope.adapters.postgres_work import PostgresWorkRepository
 from reposcope.application.work import AdmissionPolicy, WorkService
 from reposcope.infrastructure.db.migrate import run_migrations
@@ -81,6 +82,7 @@ async def database() -> AsyncIterator[DatabaseHarness]:
         RuntimeResources(ReadyProbe(), 0.1),
         settings,
         WorkService(PostgresWorkRepository(pool)),
+        events=PostgresRunEvents(pool),
     )
     try:
         async with httpx.AsyncClient(

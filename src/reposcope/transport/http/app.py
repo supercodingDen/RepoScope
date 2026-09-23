@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import logging
 import secrets
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import AsyncGenerator, Awaitable, Callable, Mapping
 from uuid import UUID, uuid4
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import ValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -29,14 +29,44 @@ from contracts.models import (
     SearchRequest,
     SearchResponse,
 )
+from reposcope.application.run_stream import RunStream
 from reposcope.application.work import WorkService
 from reposcope.domain.errors import WorkError
 from reposcope.ports.retrieval import SearchWorkflow
+from reposcope.ports.run_events import RunEventStore
 from reposcope.runtime import RuntimeResources
 from reposcope.settings import RuntimeSettings
 
 LOGGER = logging.getLogger("reposcope.http")
 RequestHandler = Callable[[Request], Awaitable[Response]]
+
+
+class _RunStreamingResponse(StreamingResponse):
+    """Release a connection slot even if the ASGI send path disconnects early."""
+
+    def __init__(
+        self,
+        stream: AsyncGenerator[str, None],
+        store: RunEventStore,
+        connection_id: UUID,
+    ) -> None:
+        super().__init__(
+            stream,
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
+        )
+        self.run_stream = stream
+        self.store = store
+        self.connection_id = connection_id
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        try:
+            await super().__call__(scope, receive, send)
+        finally:
+            try:
+                await self.run_stream.aclose()
+            finally:
+                await self.store.release(self.connection_id)
 
 
 class BodyLimitMiddleware:
@@ -87,6 +117,7 @@ def create_public_application(
     settings: RuntimeSettings,
     service: WorkService | None,
     retrieval: SearchWorkflow | None = None,
+    events: RunEventStore | None = None,
 ) -> FastAPI:
     """Register authenticated business controllers on the public application only."""
     application = create_health_application(resources, include_metrics=False)
@@ -140,6 +171,25 @@ def create_public_application(
     async def get_run(run_id: str, request: Request) -> RunView:
         workflow = authorized(request)
         return await workflow.get_run(settings.principal_id, identifier(run_id))
+
+    @application.get("/v1/runs/{run_id}/events")
+    async def run_events(run_id: str, request: Request) -> StreamingResponse:
+        authorized(request)
+        if events is None:
+            raise WorkError("DEPENDENCY_UNAVAILABLE")
+        parsed_run_id = identifier(run_id)
+        cursors = request.headers.getlist("Last-Event-ID")
+        if len(cursors) > 1:
+            raise WorkError("VALIDATION_ERROR")
+        stream = RunStream(events)
+        connection_id, after = await stream.open(
+            settings.principal_id, parsed_run_id, cursors[0] if cursors else None
+        )
+        return _RunStreamingResponse(
+            stream.stream(connection_id, settings.principal_id, parsed_run_id, after),
+            events,
+            connection_id,
+        )
 
     @application.post("/v1/search", response_model=SearchResponse)
     async def search(request: Request) -> SearchResponse:

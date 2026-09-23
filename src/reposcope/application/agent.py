@@ -6,7 +6,7 @@ import asyncio
 import json
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Protocol
+from typing import Literal, Protocol, cast
 from uuid import UUID
 
 import tiktoken
@@ -100,15 +100,24 @@ class AgentHandler:
                 self.retrieval,
                 self.store,
             )
-            await self.repository.record_tool_step(lease)
+            await self.repository.record_started(
+                lease, "mock" if self.provider is None else "gpt-5.6-luna"
+            )
+            initial_step = await self.repository.record_tool_step(lease, "search_code")
             evidence = await tools.search_code(
                 SearchCodeTool(
                     repository_id=scope.repository_id,
                     generation_id=scope.generation_id,
                     query=initial_query(preparation.question),
-                    top_k=12,
+                    top_k=8,
                 )
             )
+            await self.repository.record_tool_completed(lease, "search_code", initial_step)
+            if evidence.results:
+                related = await self.repository.one_hop_chunks(
+                    lease, preparation, tuple(item.path for item in evidence.results)
+                )
+                evidence = tools.add_expanded(evidence, related)
             if self.provider is None:
                 if not evidence.results:
                     return Complete(
@@ -208,8 +217,14 @@ class AgentHandler:
                 return PermanentFailure("VALIDATION_ERROR")
             history.extend(turn.continuation)
             for call in turn.calls:
-                await self.repository.record_tool_step(lease)
+                if call.name not in {"search_code", "get_file", "get_repository_summary"}:
+                    return PermanentFailure("VALIDATION_ERROR")
+                tool_name = cast(
+                    Literal["search_code", "get_file", "get_repository_summary"], call.name
+                )
+                step = await self.repository.record_tool_step(lease, tool_name)
                 result = await self._call_tool(call, tools)
+                await self.repository.record_tool_completed(lease, tool_name, step)
                 if isinstance(result, SearchResponse):
                     known.update({item.chunk_id: item for item in result.results})
                 history.append(

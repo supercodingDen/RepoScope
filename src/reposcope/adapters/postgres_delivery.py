@@ -12,7 +12,15 @@ from uuid import UUID
 from psycopg import AsyncConnection, sql
 from psycopg_pool import AsyncConnectionPool
 
-from contracts.models import AgentRequested, Contract, IngestRequested, SourceAcquired
+from contracts.models import (
+    AgentRequested,
+    CompletedData,
+    Contract,
+    FailedData,
+    IngestRequested,
+    SourceAcquired,
+)
+from reposcope.adapters.postgres_run_events import append_run_event
 from reposcope.adapters.postgres_work import _read
 from reposcope.domain.delivery import (
     Complete,
@@ -451,6 +459,17 @@ class PostgresDeliveryRepository:
                     "reposcope.jobs WHERE job_id=%s) AND status IN ('pending','staged')",
                     (lease.event.aggregate_id,),
                 )
+            if isinstance(lease.event, AgentRequested):
+                data = (
+                    FailedData(code=failure, message="The run could not be completed.")
+                    if failure is not None
+                    else CompletedData(result=outcome.result)
+                    if isinstance(outcome, Complete) and outcome.result is not None
+                    else None
+                )
+                if data is None:
+                    raise ValueError("Agent outcome is incomplete")
+                await append_run_event(connection, lease.event.aggregate_id, data)
             await self._completion(connection, lease.consumer, lease.event, status, failure)
 
     async def reconcile(self) -> int:
@@ -517,6 +536,12 @@ class PostgresDeliveryRepository:
                 failure = await updated.fetchone()
                 if failure is None:
                     continue
+                if isinstance(event, AgentRequested):
+                    await append_run_event(
+                        connection,
+                        event.aggregate_id,
+                        FailedData(code=failure[0], message="The run could not be completed."),
+                    )
                 await self._completion(connection, consumer, event, "failed", failure[0])
                 if isinstance(event, (IngestRequested, SourceAcquired)):
                     await connection.execute(
