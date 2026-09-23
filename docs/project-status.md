@@ -102,4 +102,3 @@ Disk limits are enforced by monitoring and finalization checks, with possible tr
 T09: durable run-event replay, SSE and CLI reporting, plus same-generation one-hop context expansion. Later performance gates remain open. The original overall job deadline still applies to source acquisition and indexing.
 
 The reviewed source is synchronized to the owner's private GitHub repository, `supercodingDen/RepoScope`, after each complete task. The D-drive extraction has no persistent local Git history; synchronization uses the connected GitHub integration. Public release, PR, hosted deployment and system installation were not performed. Remote CI results have not been verified. Earlier T03 evidence remains in `docs/verification/t03-checks.txt`, `t03-native-checks.txt` and the T03 API guide.
-

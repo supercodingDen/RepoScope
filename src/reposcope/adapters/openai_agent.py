@@ -117,4 +117,3 @@ class OpenAIAgentProvider:
         except (KeyError, TypeError, ValueError, json.JSONDecodeError):
             raise ValueError("Invalid model result") from None
         return ModelTurn((), answer, citations, input_tokens, output_tokens)
-
