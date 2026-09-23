@@ -1,7 +1,23 @@
 # Project status
 
-Milestone: **T07 scoped retrieval implemented and verified in the native Windows environment**.
+Milestone: **T08 pinned read-only agent implemented and verified in the native Windows environment**.
 Verification date: 2026-09-23 UTC. Working project: `D:\RepoScope_project\reposcope`.
+
+## T08 delivery and verification
+
+- The agent consumer verifies the persisted lease and ready/superseded completed generation, retrieves bounded evidence from that exact commit, and exposes only search, verified file-range read, and repository-summary tools. All model-supplied scope IDs are checked against the admitted run.
+- Default mock mode completes runs with a cited source excerpt or an insufficient-evidence result and makes no paid calls. Live Luna uses the official Responses SDK with local function tools and a structured final answer. Terra and Sol remain disabled.
+- Migration `0006_agent` adds durable per-attempt reservations and usage state. Every paid attempt reserves under the shared admission lock before dispatch. The model loop limits attempts and tool steps to six, input estimates to 24K tokens, output to 2K tokens, and respects the original run deadline. Timeout/unknown usage stays reserved.
+- Real PostgreSQL tests exercised fixed-version retrieval after supersession, mock completion and persistence, a simulated Luna reservation-before-call and usage settlement, stale prices, uncertain costs, and the seventh-attempt rejection. No live paid call was made. See [T08 guide](t08-agent.md).
+
+| T08 check | Executed result |
+| --- | --- |
+| Full offline pytest | 339 passed, 74 skipped |
+| Native PostgreSQL/NATS/public GitHub integration | 77 passed, 1 optional benchmark skipped |
+| Strict mypy, Ruff lint/format | Windows and Linux targets passed; 101 Python files type-checked, 138 formatted |
+| Contracts | 48 exports current; 20 schema/example pairs and 2 OpenAPI documents validated |
+| Independent review | Cumulative evidence, retry cost, clipped line range and startup configuration findings fixed and retested |
+| Redacted source-only Gitleaks | Final scan recorded in [T08 checks](verification/t08-checks.txt) |
 
 ## T07 delivery and verification
 

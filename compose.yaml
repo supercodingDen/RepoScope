@@ -138,6 +138,21 @@ services:
   agent:
     <<: *runtime
     command: ["python", "-m", "reposcope", "agent"]
+    volumes:
+      - source-data:/var/lib/reposcope/sources:ro
+    environment:
+      <<: *runtime-environment
+      ROLE: agent
+      PROVIDER_MODE: ${PROVIDER_MODE:-mock}
+      ALLOW_PAID_API_CALLS: ${ALLOW_PAID_API_CALLS:-false}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      EMBEDDING_DAILY_BUDGET_USD: ${EMBEDDING_DAILY_BUDGET_USD:-}
+      EMBEDDING_PRICE_PER_MILLION_USD: ${EMBEDDING_PRICE_PER_MILLION_USD:-}
+      EMBEDDING_PRICE_VERIFIED_DATE: ${EMBEDDING_PRICE_VERIFIED_DATE:-}
+      REPOSCOPE_SOURCE_ROOT: /var/lib/reposcope/sources
+      AGENT_INPUT_PRICE_PER_MILLION_USD: ${AGENT_INPUT_PRICE_PER_MILLION_USD:-}
+      AGENT_OUTPUT_PRICE_PER_MILLION_USD: ${AGENT_OUTPUT_PRICE_PER_MILLION_USD:-}
+      AGENT_PRICE_VERIFIED_DATE: ${AGENT_PRICE_VERIFIED_DATE:-}
 
   integration:
     profiles: [test]

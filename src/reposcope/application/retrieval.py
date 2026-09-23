@@ -11,7 +11,7 @@ import tiktoken
 from contracts.models import SearchMatch, SearchRequest, SearchResponse
 from reposcope.domain.errors import WorkError
 from reposcope.domain.indexing import EmbeddingBatch, validate_embedding_response
-from reposcope.domain.retrieval import chunk_uuid, fuse_candidates
+from reposcope.domain.retrieval import RetrievalScope, chunk_uuid, fuse_candidates
 from reposcope.ports.embedding import (
     EmbeddingBudgetExceeded,
     EmbeddingPriceStale,
@@ -32,12 +32,26 @@ class RetrievalService:
         self.provider = provider
 
     async def search(self, request: SearchRequest, principal_id: UUID) -> SearchResponse:
+        scope = await self.repository.active_scope(principal_id, request.repository_id)
+        if scope is None:
+            raise WorkError("INDEX_NOT_READY")
+        return await self._search_scope(request, scope)
+
+    async def search_pinned(
+        self, request: SearchRequest, principal_id: UUID, generation_id: UUID, commit_sha: str
+    ) -> SearchResponse:
+        """Search the admitted immutable generation, even after a new one becomes active."""
+        scope = await self.repository.pinned_scope(
+            principal_id, request.repository_id, generation_id, commit_sha
+        )
+        if scope is None:
+            raise WorkError("INDEX_NOT_READY")
+        return await self._search_scope(request, scope)
+
+    async def _search_scope(self, request: SearchRequest, scope: RetrievalScope) -> SearchResponse:
         started = time.perf_counter()
         try:
             async with asyncio.timeout(10):
-                scope = await self.repository.active_scope(principal_id, request.repository_id)
-                if scope is None:
-                    raise WorkError("INDEX_NOT_READY")
                 if scope.embedding_space_version != self.provider.space.version:
                     raise WorkError("PROVIDER_UNAVAILABLE")
                 if scope.chunk_count == 0:

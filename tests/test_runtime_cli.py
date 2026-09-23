@@ -114,7 +114,9 @@ def command_environment(overrides: dict[str, str]) -> dict[str, str]:
     return environment
 
 
-def test_cli_argument_selects_the_requested_role(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cli_argument_selects_the_requested_role(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     """The command role overrides environment selection before resource startup."""
     captured: list[RuntimeSettings] = []
 
@@ -126,6 +128,7 @@ def test_cli_argument_selects_the_requested_role(monkeypatch: pytest.MonkeyPatch
     monkeypatch.setenv("REDIS_URL", "redis://redis:6379/0")
     monkeypatch.setenv("NATS_URL", "nats://nats:4222")
     monkeypatch.setenv("ROLE", "api")
+    monkeypatch.setenv("REPOSCOPE_SOURCE_ROOT", str(tmp_path))
 
     assert command.main(("agent",)) == 0
     assert captured[0].role == "agent"

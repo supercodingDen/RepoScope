@@ -18,6 +18,10 @@ class RetrievalRepository(Protocol):
         self, principal_id: UUID, repository_id: UUID
     ) -> RetrievalScope | None: ...
 
+    async def pinned_scope(
+        self, principal_id: UUID, repository_id: UUID, generation_id: UUID, commit_sha: str
+    ) -> RetrievalScope | None: ...
+
     async def candidates(
         self,
         scope: RetrievalScope,

@@ -124,6 +124,7 @@ async def test_accepted_but_unindexed_repository_is_not_ready(database: Database
 async def test_narrow_filter_uses_only_active_generation_with_exact_recall(
     database: DatabaseHarness, tmp_path: Path
 ) -> None:
+    old_event = None
     for key, files in (
         ("old", {"src/target.py": b"def obsolete_marker():\n    return 1\n"}),
         ("new", {"src/target.py": b"def current_marker():\n    return 2\n"}),
@@ -137,6 +138,8 @@ async def test_narrow_filter_uses_only_active_generation_with_exact_recall(
             ).handle(lease),
             Staged,
         )
+        if key == "old":
+            old_event = event
     repository = PostgresRetrievalRepository(database.pool)
     scope = await repository.active_scope(database.principal, event.payload.repository_id)
     assert scope is not None and scope.generation_id == event.payload.generation_id
@@ -148,3 +151,20 @@ async def test_narrow_filter_uses_only_active_generation_with_exact_recall(
     assert approximate == exact
     assert len(approximate) == 1
     assert "current_marker" in approximate[0].content
+    assert old_event is not None
+    pinned = await RetrievalService(repository, MockEmbeddingProvider()).search_pinned(
+        SearchRequest(repository_id=old_event.payload.repository_id, query="obsolete_marker"),
+        database.principal,
+        old_event.payload.generation_id,
+        old_event.payload.commit_sha,
+    )
+    assert pinned.generation_id == old_event.payload.generation_id
+    assert any("obsolete_marker" in item.content for item in pinned.results)
+    with pytest.raises(WorkError) as foreign:
+        await RetrievalService(repository, MockEmbeddingProvider()).search_pinned(
+            SearchRequest(repository_id=old_event.payload.repository_id, query="obsolete_marker"),
+            uuid4(),
+            old_event.payload.generation_id,
+            old_event.payload.commit_sha,
+        )
+    assert foreign.value.code == "INDEX_NOT_READY"

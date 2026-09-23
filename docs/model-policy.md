@@ -17,7 +17,7 @@ The [embedding guide](https://developers.openai.com/api/docs/guides/embeddings) 
 
 ## Routing algorithm contract
 
-1. Retrieve evidence and statically expand at most one dependency hop before the first model call.
+1. Retrieve bounded evidence from the admitted generation before the first model call. One-hop dependency expansion is scheduled for T09; T08 does not claim it.
 2. Start with Luna at low reasoning effort for routine locate/explain tasks. Use the official Responses API with validated function tools and structured final output; keep the SDK in one adapter.
 3. Validate citations, output structure, and whether the requested analysis has adequate evidence. Missing evidence triggers one bounded retrieval expansion or an insufficient-evidence result, not an automatic larger-model call.
 4. A complex multi-file task with adequate evidence but invalid/inadequate output may use Terra only if the operator enables escalation, permits the model, and reserves the worst-case next call within all budgets. All retries/escalations count toward the same six model-attempt ceiling.
@@ -28,7 +28,7 @@ The desired high Luna share is measured after real traffic; the proposed 80/18/2
 
 ## Context management
 
-AST boundaries → bounded chunks → embeddings → hybrid search → same-generation one-hop dependency expansion → deduplication → token budgeting → model analysis.
+AST boundaries → bounded chunks → embeddings → hybrid search → deduplication → token budgeting → model analysis. Same-generation one-hop dependency expansion is planned for T09.
 
 Use at most 12 evidence chunks and 8,000 evidence tokens, including expanded dependencies. A tool response is bounded by both tokens and bytes/characters. Compact step history by dropping already-referenced duplicate source and retaining identifiers and safe observations, not model-generated hidden reasoning. Reject a request when the complete model payload cannot fit within the cap; never silently exceed it.
 

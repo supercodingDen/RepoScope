@@ -1,0 +1,7 @@
+T08 verification, 2026-09-23 UTC, Windows native environment
+Offline pytest: 339 passed, 74 skipped in 16.86 s. Integration tests are skipped in this run by default.
+Native PostgreSQL 17/pgvector 0.8.6, NATS 2.14.7 and public GitHub acceptance: 77 passed, 1 optional benchmark skipped in 82.66 s. Public source pinned to 672971d66a2ef9f85151e53283113f33d642dabd.
+Strict mypy on Windows and Linux targets: 101 source files passed. Ruff lint and format: passed; 138 Python files formatted. Contract export check: 48 current files. Semantic validation: 20 schema/example pairs and two OpenAPI documents valid.
+Redacted source-only Gitleaks: 218 reviewed files, approximately 1.17 MB; no leaks found.
+Independent T08 review found cumulative evidence, retry cost display, clipped file range, and missing agent source-root validation gaps; all were fixed and targeted tests rerun.
+No paid provider call. Docker/Compose smoke, live-model quality, one-hop expansion and T09 event replay/SSE remain unexecuted or future work.

@@ -52,7 +52,32 @@ class PostgresEmbeddingBudget:
                 )
                 row = await cursor.fetchone()
                 used = Decimal(row[0]) if row is not None else Decimal(0)
-                if used + ceiling > self.daily_limit_usd:
+                cursor = await connection.execute(
+                    "SELECT coalesce(sum(reserved_usd),0)::text FROM "
+                    "reposcope.model_attempts WHERE budget_day=%s",
+                    (today,),
+                )
+                model_row = await cursor.fetchone()
+                model_day = Decimal(model_row[0]) if model_row is not None else Decimal(0)
+                cursor = await connection.execute(
+                    "SELECT coalesce(sum(reserved_usd),0)::text FROM "
+                    "reposcope.embedding_reservations"
+                )
+                project_row = await cursor.fetchone()
+                embedding_project = (
+                    Decimal(project_row[0]) if project_row is not None else Decimal(0)
+                )
+                cursor = await connection.execute(
+                    "SELECT coalesce(sum(reserved_usd),0)::text FROM reposcope.model_attempts"
+                )
+                model_project_row = await cursor.fetchone()
+                model_project = (
+                    Decimal(model_project_row[0]) if model_project_row is not None else Decimal(0)
+                )
+                if (
+                    used + model_day + ceiling > self.daily_limit_usd
+                    or embedding_project + model_project + ceiling > Decimal("4.00")
+                ):
                     raise EmbeddingBudgetExceeded()
                 await connection.execute(
                     "INSERT INTO reposcope.embedding_reservations("

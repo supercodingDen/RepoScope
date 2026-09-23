@@ -49,6 +49,9 @@ class RuntimeSettings:
     embedding_daily_budget_usd: Decimal | None = None
     embedding_price_per_million_usd: Decimal | None = None
     embedding_price_verified_date: date | None = None
+    agent_input_price_per_million_usd: Decimal | None = None
+    agent_output_price_per_million_usd: Decimal | None = None
+    agent_price_verified_date: date | None = None
 
     @property
     def database_pool_size(self) -> int:
@@ -72,14 +75,28 @@ class RuntimeSettings:
         budget: Decimal | None = None
         price: Decimal | None = None
         verified: date | None = None
+        agent_input_price: Decimal | None = None
+        agent_output_price: Decimal | None = None
+        agent_verified: date | None = None
         if provider_mode == "openai":
             if not paid or not values.get("OPENAI_API_KEY", "").strip():
                 raise SettingsValidationError("OpenAI requires explicit paid opt-in and key.")
             budget = _positive_decimal(values.get("EMBEDDING_DAILY_BUDGET_USD", ""))
             price = _positive_decimal(values.get("EMBEDDING_PRICE_PER_MILLION_USD", ""))
             verified = _price_verified_date(values.get("EMBEDDING_PRICE_VERIFIED_DATE", ""))
+            if role == "agent":
+                agent_input_price = _positive_decimal(
+                    values.get("AGENT_INPUT_PRICE_PER_MILLION_USD", "")
+                )
+                agent_output_price = _positive_decimal(
+                    values.get("AGENT_OUTPUT_PRICE_PER_MILLION_USD", "")
+                )
+                agent_verified = _price_verified_date(values.get("AGENT_PRICE_VERIFIED_DATE", ""))
         elif paid:
             raise SettingsValidationError("Paid opt-in requires OpenAI provider mode.")
+        source_root = _absolute_path(values.get("REPOSCOPE_SOURCE_ROOT"))
+        if role == "agent" and source_root is None:
+            raise SettingsValidationError("Agent requires REPOSCOPE_SOURCE_ROOT.")
         return cls(
             database_url=SecretStr(database_url),
             redis_url=SecretStr(redis_url),
@@ -95,7 +112,7 @@ class RuntimeSettings:
             probe_timeout_seconds=_timeout(values.get("PROBE_TIMEOUT_SECONDS", "2")),
             shutdown_timeout_seconds=_timeout(values.get("SHUTDOWN_TIMEOUT_SECONDS", "10")),
             api_token=SecretStr(values.get("REPOSCOPE_API_TOKEN", "")),
-            source_root=_absolute_path(values.get("REPOSCOPE_SOURCE_ROOT")),
+            source_root=source_root,
             git_binary=_absolute_path(values.get("REPOSCOPE_GIT_BINARY")),
             source_import_root=_absolute_path(values.get("SOURCE_IMPORT_ROOT")),
             principal_id=_principal(
@@ -105,6 +122,9 @@ class RuntimeSettings:
             embedding_daily_budget_usd=budget,
             embedding_price_per_million_usd=price,
             embedding_price_verified_date=verified,
+            agent_input_price_per_million_usd=agent_input_price,
+            agent_output_price_per_million_usd=agent_output_price,
+            agent_price_verified_date=agent_verified,
         )
 
     @classmethod

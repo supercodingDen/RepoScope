@@ -19,6 +19,8 @@ from psycopg_pool import AsyncConnectionPool
 from reposcope.adapters.embedding import MockEmbeddingProvider, OpenAIEmbeddingProvider
 from reposcope.adapters.embedding_budget import PostgresEmbeddingBudget
 from reposcope.adapters.nats_delivery import JetStreamBroker
+from reposcope.adapters.openai_agent import OpenAIAgentProvider
+from reposcope.adapters.postgres_agent import PostgresAgentRepository
 from reposcope.adapters.postgres_delivery import PostgresDeliveryRepository
 from reposcope.adapters.postgres_index import PostgresIndexRepository
 from reposcope.adapters.postgres_retrieval import PostgresRetrievalRepository
@@ -26,6 +28,7 @@ from reposcope.adapters.postgres_source import PostgresSourceRepository
 from reposcope.adapters.postgres_work import PostgresWorkRepository
 from reposcope.adapters.source_git import GitSource
 from reposcope.adapters.source_storage import SourceStore
+from reposcope.application.agent import AgentHandler
 from reposcope.application.delivery import DeliveryWorker, OutboxPublisher, run_reconciler
 from reposcope.application.index import IndexHandler
 from reposcope.application.retrieval import RetrievalService
@@ -66,6 +69,25 @@ async def run_role(settings: RuntimeSettings) -> None:
                     group.create_task(run_reconciler(repository, stopping))
                 else:
                     handler = delivery_handler(settings, repository)
+                    if settings.role == "agent":
+                        assert settings.source_root is not None
+                        agent_provider = (
+                            OpenAIAgentProvider(settings.openai_api_key.get_secret_value())
+                            if settings.provider_mode == "openai"
+                            else None
+                        )
+                        handler = AgentHandler(
+                            PostgresAgentRepository(repository),
+                            RetrievalService(
+                                PostgresRetrievalRepository(resources.probe.database_pool),
+                                embedding_provider(settings, resources.probe.database_pool),
+                            ),
+                            SourceStore(Path(settings.source_root)),
+                            agent_provider,
+                            settings.agent_input_price_per_million_usd,
+                            settings.agent_output_price_per_million_usd,
+                            settings.agent_price_verified_date,
+                        )
                     if isinstance(handler, SourceAcquisitionHandler):
                         group.create_task(handler.run_cleanup(stopping))
                         assert settings.source_root is not None

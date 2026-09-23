@@ -40,6 +40,17 @@ class FakeRepository:
     async def active_scope(self, principal_id: UUID, repository_id: UUID) -> RetrievalScope | None:
         return self.scope
 
+    async def pinned_scope(
+        self, principal_id: UUID, repository_id: UUID, generation_id: UUID, commit_sha: str
+    ) -> RetrievalScope | None:
+        if self.scope is not None and (
+            self.scope.repository_id,
+            self.scope.generation_id,
+            self.scope.commit_sha,
+        ) == (repository_id, generation_id, commit_sha):
+            return self.scope
+        return None
+
     async def candidates(
         self,
         scope: RetrievalScope,
@@ -135,6 +146,30 @@ async def test_provider_failure_is_safe_service_error() -> None:
             SearchRequest(repository_id=scope.repository_id, query="needle"), uuid4()
         )
     assert failed.value.code == "PROVIDER_UNAVAILABLE"
+
+
+@pytest.mark.asyncio
+async def test_pinned_search_preserves_old_complete_generation_scope() -> None:
+    provider = FakeProvider()
+    old = RetrievalScope(uuid4(), uuid4(), "a" * 40, provider.space.version)
+    repository = FakeRepository(old)
+    service = RetrievalService(repository, provider)
+    result = await service.search_pinned(
+        SearchRequest(repository_id=old.repository_id, query="needle"),
+        uuid4(),
+        old.generation_id,
+        old.commit_sha,
+    )
+    assert result.generation_id == old.generation_id
+    assert repository.calls[0][0] == old.generation_id
+    with pytest.raises(WorkError) as forged:
+        await service.search_pinned(
+            SearchRequest(repository_id=old.repository_id, query="needle"),
+            uuid4(),
+            uuid4(),
+            old.commit_sha,
+        )
+    assert forged.value.code == "INDEX_NOT_READY"
 
 
 @pytest.mark.asyncio

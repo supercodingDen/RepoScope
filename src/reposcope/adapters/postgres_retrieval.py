@@ -88,6 +88,25 @@ class PostgresRetrievalRepository:
             return None
         return RetrievalScope(repository_id, generation_id, commit_sha, space, count or 0)
 
+    async def pinned_scope(
+        self, principal_id: UUID, repository_id: UUID, generation_id: UUID, commit_sha: str
+    ) -> RetrievalScope | None:
+        async with asyncio.timeout(10), self.pool.connection() as connection:
+            cursor = await connection.execute(
+                "SELECT g.embedding_space_version,g.status,"
+                "(SELECT count(*)::integer FROM reposcope.index_chunks c "
+                "WHERE c.generation_id=g.generation_id) "
+                "FROM reposcope.repositories r "
+                "JOIN reposcope.index_generations g ON g.repository_id=r.repository_id "
+                "WHERE r.repository_id=%s AND r.principal_id=%s "
+                "AND g.generation_id=%s AND g.commit_sha=%s",
+                (repository_id, principal_id, generation_id, commit_sha),
+            )
+            row = cast(tuple[str, str, int] | None, await cursor.fetchone())
+        if row is None or row[1] not in ("ready", "superseded"):
+            return None
+        return RetrievalScope(repository_id, generation_id, commit_sha, row[0], row[2])
+
     async def candidates(
         self,
         scope: RetrievalScope,

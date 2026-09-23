@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 from pydantic import SecretStr
@@ -58,6 +59,33 @@ def test_settings_reject_live_provider_mode() -> None:
                 "PROVIDER_MODE": "live",
             }
         )
+
+
+def test_agent_live_mode_requires_separate_fresh_model_prices(tmp_path: Path) -> None:
+    values = {
+        "DATABASE_URL": "postgresql://runtime:secret@postgres/reposcope",
+        "REDIS_URL": "redis://redis:6379/0",
+        "NATS_URL": "nats://nats:4222",
+        "ROLE": "agent",
+        "REPOSCOPE_SOURCE_ROOT": str(tmp_path),
+        "PROVIDER_MODE": "openai",
+        "ALLOW_PAID_API_CALLS": "true",
+        "OPENAI_API_KEY": "synthetic-test-key",
+        "EMBEDDING_DAILY_BUDGET_USD": "1.00",
+        "EMBEDDING_PRICE_PER_MILLION_USD": "0.02",
+        "EMBEDDING_PRICE_VERIFIED_DATE": datetime.now(UTC).date().isoformat(),
+    }
+    with pytest.raises(SettingsValidationError):
+        RuntimeSettings.from_values(values)
+    values.update(
+        {
+            "AGENT_INPUT_PRICE_PER_MILLION_USD": "0.20",
+            "AGENT_OUTPUT_PRICE_PER_MILLION_USD": "1.20",
+            "AGENT_PRICE_VERIFIED_DATE": datetime.now(UTC).date().isoformat(),
+        }
+    )
+    settings = RuntimeSettings.from_values(values)
+    assert settings.agent_input_price_per_million_usd is not None
 
 
 def test_settings_accept_explicit_budgeted_openai_mode() -> None:
