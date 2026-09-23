@@ -1,0 +1,53 @@
+T02 Windows verification: 2026-09-17 04:53:10Z
+
+Python version
+Python 3.12.14
+Exit code: 0
+
+Contract export drift
+Checked 45 contract files.
+Exit code: 0
+
+Contract validation
+Validated 19 schema/example pairs and 2 OpenAPI 3.1 documents.
+Exit code: 0
+
+Pytest offline suite (real dependencies explicitly excluded)
+.ss..................................................................... [ 45%]
+........................................................................ [ 91%]
+.............                                                            [100%]
+=========================== short test summary info ===========================
+SKIPPED [1] tests\integration\test_migrations.py:26: Set RUN_INTEGRATION_TESTS=1 to use a real PostgreSQL instance.
+SKIPPED [1] tests\integration\test_nats_recovery.py:64: Set NATS_SERVER_BINARY to a trusted local test-server executable.
+155 passed, 2 skipped in 8.99s
+Exit code: 0
+
+Ruff lint
+All checks passed!
+Exit code: 0
+
+Ruff formatting
+55 files already formatted
+Exit code: 0
+
+Strict mypy
+Success: no issues found in 36 source files
+Exit code: 0
+
+Python bytecode compilation (not a container build)
+Exit code: 0
+
+Real NATS 2.14.7 localhost stop/restart recovery
+.                                                                        [100%]
+1 passed in 1.98s
+Exit code: 0
+
+Docker image build/Compose runtime/PostgreSQL and Redis outages: NOT EXECUTED. Docker/WSL are unavailable. These gates remain open.
+
+Gitleaks 8.30.1 source snapshot (credential files excluded):
+11:54PM INF scanned ~587043 bytes (587.04 KB) in 45.1ms
+11:54PM INF no leaks found
+
+Official Docker Compose v5.5.1: config --quiet passed with local dotenv disabled. Registry image digests verified; actual container build/boot not executed.
+Independent scoped re-review: all identified functional and typing findings addressed; no actionable regressions found.
+No Git initialization, commit, push or remote CI execution performed.

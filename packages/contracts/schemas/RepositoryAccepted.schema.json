@@ -1,0 +1,28 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "repository_id": {
+      "format": "uuid",
+      "title": "Repository Id",
+      "type": "string"
+    },
+    "job_id": {
+      "format": "uuid",
+      "title": "Job Id",
+      "type": "string"
+    },
+    "status": {
+      "const": "queued",
+      "default": "queued",
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "repository_id",
+    "job_id"
+  ],
+  "title": "RepositoryAccepted",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

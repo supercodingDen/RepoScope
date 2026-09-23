@@ -1,0 +1,23 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "repository_id": {
+      "format": "uuid",
+      "title": "Repository Id",
+      "type": "string"
+    },
+    "question": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "title": "Question",
+      "type": "string"
+    }
+  },
+  "required": [
+    "repository_id",
+    "question"
+  ],
+  "title": "RunCreate",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

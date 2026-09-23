@@ -1,0 +1,25 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "url": {
+      "maxLength": 256,
+      "pattern": "^https://github\\.com/[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9_.-]{1,100}$",
+      "title": "Url",
+      "type": "string"
+    },
+    "requested_ref": {
+      "default": "HEAD",
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$",
+      "title": "Requested Ref",
+      "type": "string"
+    }
+  },
+  "required": [
+    "url"
+  ],
+  "title": "RepositoryCreate",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

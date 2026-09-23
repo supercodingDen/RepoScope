@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "policy_version": "source-v1",
+  "repositories": [
+    {
+      "url": "https://github.com/pallets/itsdangerous",
+      "requested_ref": "HEAD",
+      "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+      "manifest_digest": "7fb39a96d85f32060b90849bc4da4dca84e109bdc5e9f6d9d06a4a4521257ebb",
+      "eligible_file_count": 49,
+      "license": {"upstream_identifier": "BSD-3-Clause", "manifest_identifier": "unknown", "path": "LICENSE.txt"},
+      "provenance": {"method": "production-git-blobless", "verified_at": "2026-09-23", "public_network_executed": true, "providers_used": 0, "imported_code_executed": false, "source_redistributed": false}
+    }
+  ]
+}

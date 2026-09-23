@@ -1,0 +1,55 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "repository_id": {
+      "format": "uuid",
+      "title": "Repository Id",
+      "type": "string"
+    },
+    "generation_id": {
+      "format": "uuid",
+      "title": "Generation Id",
+      "type": "string"
+    },
+    "commit_sha": {
+      "pattern": "^[a-f0-9]{40}$",
+      "title": "Commit Sha",
+      "type": "string"
+    },
+    "file_count": {
+      "minimum": 0,
+      "title": "File Count",
+      "type": "integer"
+    },
+    "chunk_count": {
+      "minimum": 0,
+      "title": "Chunk Count",
+      "type": "integer"
+    },
+    "languages": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Languages",
+      "type": "array"
+    },
+    "overview": {
+      "maxLength": 4000,
+      "title": "Overview",
+      "type": "string"
+    }
+  },
+  "required": [
+    "repository_id",
+    "generation_id",
+    "commit_sha",
+    "file_count",
+    "chunk_count",
+    "languages",
+    "overview"
+  ],
+  "title": "RepositorySummary",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

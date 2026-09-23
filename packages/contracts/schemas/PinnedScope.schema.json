@@ -1,0 +1,22 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "repository_id": {
+      "format": "uuid",
+      "title": "Repository Id",
+      "type": "string"
+    },
+    "generation_id": {
+      "format": "uuid",
+      "title": "Generation Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "repository_id",
+    "generation_id"
+  ],
+  "title": "PinnedScope",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

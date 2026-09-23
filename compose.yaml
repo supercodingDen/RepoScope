@@ -1,0 +1,150 @@
+name: reposcope
+
+x-runtime: &runtime
+  image: reposcope:local
+  build:
+    context: .
+    target: runtime
+  init: true
+  restart: unless-stopped
+  read_only: true
+  tmpfs:
+    - /tmp:size=64m,mode=1777
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  stop_grace_period: 20s
+  networks: [backend]
+  environment: &runtime-environment
+    APP_ENV: development
+    PUBLIC_HOST: 0.0.0.0
+    MANAGEMENT_HOST: 0.0.0.0
+    PROVIDER_MODE: mock
+    ALLOW_PAID_API_CALLS: "false"
+    DATABASE_URL: postgresql://reposcope_app:${APP_DATABASE_PASSWORD:?Set APP_DATABASE_PASSWORD}@postgres:5432/reposcope
+    REDIS_URL: redis://redis:6379/0
+    NATS_URL: nats://nats:4222
+    REPOSCOPE_API_TOKEN: ${REPOSCOPE_API_TOKEN:-}
+    REPOSCOPE_PRINCIPAL_ID: ${REPOSCOPE_PRINCIPAL_ID:-00000000-0000-0000-0000-000000000001}
+  depends_on: &runtime-dependencies
+    migrate:
+      condition: service_completed_successfully
+    redis:
+      condition: service_healthy
+    nats:
+      condition: service_healthy
+  healthcheck:
+    test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/readyz', timeout=4).close()"]
+    interval: 10s
+    timeout: 5s
+    retries: 3
+    start_period: 20s
+  pids_limit: 128
+  mem_limit: 512m
+  cpus: 1.0
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.6-pg17-bookworm@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
+    environment:
+      POSTGRES_DB: reposcope
+      POSTGRES_USER: reposcope_migrator
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes: [postgres-data:/var/lib/postgresql/data]
+    networks: [backend]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reposcope_migrator -d reposcope"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    mem_limit: 1g
+    cpus: 1.0
+
+  redis:
+    image: redis:8.6.6-alpine@sha256:75934ddb37bfaebe3b4082ba673cac39f66495244134f33dd0a502ce03cdcd36
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
+    networks: [backend]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    mem_limit: 128m
+    cpus: 0.5
+
+  nats:
+    image: nats:2.14.7-alpine@sha256:ae5c49895a97b129546e30908012d7c965296c02f8754cd879e9d50ed3edd508
+    command: ["-js", "-sd", "/data", "-m", "8222"]
+    volumes: [nats-data:/data]
+    networks: [backend]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8222/healthz?js-enabled-only=true"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    mem_limit: 256m
+    cpus: 0.5
+
+  migrate:
+    image: reposcope:local
+    build:
+      context: .
+      target: runtime
+    command: ["python", "-m", "reposcope.infrastructure.db.migrate"]
+    restart: "no"
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [backend]
+    environment:
+      MIGRATION_DATABASE_URL: postgresql://reposcope_migrator:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/reposcope
+      APP_DATABASE_PASSWORD: ${APP_DATABASE_PASSWORD:?Set APP_DATABASE_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *runtime
+    command: ["python", "-m", "reposcope", "api"]
+    ports: ["127.0.0.1:${API_PORT:-8000}:8000"]
+
+  indexer:
+    <<: *runtime
+    command: ["python", "-m", "reposcope", "indexer"]
+    networks: [backend, source-egress]
+    volumes: [source-data:/var/lib/reposcope/sources]
+    environment:
+      <<: *runtime-environment
+      REPOSCOPE_GIT_BINARY: /usr/bin/git
+      REPOSCOPE_SOURCE_ROOT: /var/lib/reposcope/sources
+
+  agent:
+    <<: *runtime
+    command: ["python", "-m", "reposcope", "agent"]
+
+  integration:
+    profiles: [test]
+    build:
+      context: .
+      target: test
+    command: ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/integration"]
+    networks: [backend]
+    environment:
+      <<: *runtime-environment
+      RUN_INTEGRATION_TESTS: "1"
+      MIGRATION_DATABASE_URL: postgresql://reposcope_migrator:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/reposcope
+      APP_DATABASE_PASSWORD: ${APP_DATABASE_PASSWORD:?Set APP_DATABASE_PASSWORD}
+    depends_on: *runtime-dependencies
+
+networks:
+  backend:
+    internal: true
+  source-egress: {}
+
+volumes:
+  postgres-data:
+  nats-data:
+  source-data:

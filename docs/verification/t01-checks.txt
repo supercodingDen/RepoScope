@@ -1,0 +1,38 @@
+T01 verification — 2026-09-16
+Environment: Python 3.12.14; Linux x86_64; uv 0.12.11
+No provider calls, credentials, Docker services, or remote repository access are used.
+
+$ uv sync --frozen --all-groups --no-progress
+Checked 65 packages in 0.53ms
+Exit status: 0
+
+$ uv pip check
+Checked 65 packages in 0.77ms
+All installed packages are compatible
+Exit status: 0
+
+$ uv run python scripts/export_contracts.py --check
+Checked 45 contract files.
+Exit status: 0
+
+$ uv run python scripts/validate_contracts.py
+Validated 19 schema/example pairs and 2 OpenAPI 3.1 documents.
+Exit status: 0
+
+$ uv run mypy
+Success: no issues found in 8 source files
+Exit status: 0
+
+$ uv run ruff check .
+All checks passed!
+Exit status: 0
+
+$ uv run ruff format --check .
+25 files already formatted
+Exit status: 0
+
+$ uv run pytest -q
+........................................................................ [ 60%]
+...............................................                          [100%]
+119 passed in 1.16s
+Exit status: 0

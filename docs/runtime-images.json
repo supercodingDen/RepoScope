@@ -1,0 +1,50 @@
+[
+  {
+    "image": "python:3.12.14-slim-bookworm",
+    "digest": "sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254",
+    "platforms": [
+      "amd64",
+      "ppc64le",
+      "386",
+      "arm",
+      "arm64"
+    ],
+    "source": "https://hub.docker.com/v2/repositories/library/python/tags/3.12.14-slim-bookworm"
+  },
+  {
+    "image": "nats:2.14.7-alpine",
+    "digest": "sha256:ae5c49895a97b129546e30908012d7c965296c02f8754cd879e9d50ed3edd508",
+    "platforms": [
+      "amd64",
+      "ppc64le",
+      "arm",
+      "arm64",
+      "arm"
+    ],
+    "source": "https://hub.docker.com/v2/repositories/library/nats/tags/2.14.7-alpine"
+  },
+  {
+    "image": "redis:8.6.6-alpine",
+    "digest": "sha256:75934ddb37bfaebe3b4082ba673cac39f66495244134f33dd0a502ce03cdcd36",
+    "platforms": [
+      "amd64",
+      "ppc64le",
+      "386",
+      "s390x",
+      "arm",
+      "arm64",
+      "arm",
+      "riscv64"
+    ],
+    "source": "https://hub.docker.com/v2/repositories/library/redis/tags/8.6.6-alpine"
+  },
+  {
+    "image": "pgvector/pgvector:0.8.6-pg17-bookworm",
+    "digest": "sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f",
+    "platforms": [
+      "amd64",
+      "arm64"
+    ],
+    "source": "https://hub.docker.com/v2/repositories/pgvector/pgvector/tags/0.8.6-pg17-bookworm"
+  }
+]

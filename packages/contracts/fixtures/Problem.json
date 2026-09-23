@@ -1,0 +1,8 @@
+{
+  "type": "about:blank",
+  "title": "Invalid request",
+  "status": 422,
+  "detail": "The request does not match the contract.",
+  "code": "VALIDATION_ERROR",
+  "request_id": "66666666-6666-4666-8666-666666666666"
+}

@@ -1,0 +1,103 @@
+{
+  "$defs": {
+    "SourceAcquiredPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "job_id": {
+          "format": "uuid",
+          "title": "Job Id",
+          "type": "string"
+        },
+        "repository_id": {
+          "format": "uuid",
+          "title": "Repository Id",
+          "type": "string"
+        },
+        "generation_id": {
+          "format": "uuid",
+          "title": "Generation Id",
+          "type": "string"
+        },
+        "principal_id": {
+          "format": "uuid",
+          "title": "Principal Id",
+          "type": "string"
+        },
+        "commit_sha": {
+          "pattern": "^[a-f0-9]{40}$",
+          "title": "Commit Sha",
+          "type": "string"
+        },
+        "manifest_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Manifest Digest",
+          "type": "string"
+        },
+        "policy_version": {
+          "const": "source-v1",
+          "default": "source-v1",
+          "title": "Policy Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "job_id",
+        "repository_id",
+        "generation_id",
+        "principal_id",
+        "commit_sha",
+        "manifest_digest"
+      ],
+      "title": "SourceAcquiredPayload",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "format": "uuid",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "occurred_at": {
+      "format": "date-time",
+      "title": "Occurred At",
+      "type": "string"
+    },
+    "aggregate_id": {
+      "format": "uuid",
+      "title": "Aggregate Id",
+      "type": "string"
+    },
+    "trace_id": {
+      "format": "uuid",
+      "title": "Trace Id",
+      "type": "string"
+    },
+    "event_type": {
+      "const": "repo.source.acquired",
+      "default": "repo.source.acquired",
+      "title": "Event Type",
+      "type": "string"
+    },
+    "payload": {
+      "$ref": "#/$defs/SourceAcquiredPayload"
+    }
+  },
+  "required": [
+    "event_id",
+    "occurred_at",
+    "aggregate_id",
+    "trace_id",
+    "payload"
+  ],
+  "title": "SourceAcquired",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

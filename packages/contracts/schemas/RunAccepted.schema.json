@@ -1,0 +1,34 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "run_id": {
+      "format": "uuid",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "repository_id": {
+      "format": "uuid",
+      "title": "Repository Id",
+      "type": "string"
+    },
+    "generation_id": {
+      "format": "uuid",
+      "title": "Generation Id",
+      "type": "string"
+    },
+    "status": {
+      "const": "queued",
+      "default": "queued",
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "run_id",
+    "repository_id",
+    "generation_id"
+  ],
+  "title": "RunAccepted",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,62 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "repository_id": {
+      "format": "uuid",
+      "title": "Repository Id",
+      "type": "string"
+    },
+    "query": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Query",
+      "type": "string"
+    },
+    "top_k": {
+      "default": 10,
+      "maximum": 20,
+      "minimum": 1,
+      "title": "Top K",
+      "type": "integer"
+    },
+    "language": {
+      "anyOf": [
+        {
+          "enum": [
+            "python",
+            "typescript",
+            "javascript",
+            "go",
+            "text"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Language"
+    },
+    "path_prefix": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Path Prefix"
+    }
+  },
+  "required": [
+    "repository_id",
+    "query"
+  ],
+  "title": "SearchRequest",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

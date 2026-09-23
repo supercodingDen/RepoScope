@@ -1,0 +1,58 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "repository_id": {
+      "format": "uuid",
+      "title": "Repository Id",
+      "type": "string"
+    },
+    "generation_id": {
+      "format": "uuid",
+      "title": "Generation Id",
+      "type": "string"
+    },
+    "commit_sha": {
+      "pattern": "^[a-f0-9]{40}$",
+      "title": "Commit Sha",
+      "type": "string"
+    },
+    "path": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Path",
+      "type": "string"
+    },
+    "start_line": {
+      "minimum": 1,
+      "title": "Start Line",
+      "type": "integer"
+    },
+    "end_line": {
+      "minimum": 1,
+      "title": "End Line",
+      "type": "integer"
+    },
+    "content": {
+      "maxLength": 12000,
+      "title": "Content",
+      "type": "string"
+    },
+    "truncated": {
+      "title": "Truncated",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "repository_id",
+    "generation_id",
+    "commit_sha",
+    "path",
+    "start_line",
+    "end_line",
+    "content",
+    "truncated"
+  ],
+  "title": "FileResult",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

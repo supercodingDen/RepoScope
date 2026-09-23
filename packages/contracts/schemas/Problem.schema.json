@@ -1,0 +1,65 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "const": "about:blank",
+      "default": "about:blank",
+      "title": "Type",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "status": {
+      "maximum": 599,
+      "minimum": 400,
+      "title": "Status",
+      "type": "integer"
+    },
+    "detail": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Detail",
+      "type": "string"
+    },
+    "code": {
+      "enum": [
+        "VALIDATION_ERROR",
+        "UNAUTHENTICATED",
+        "FORBIDDEN",
+        "NOT_FOUND",
+        "METHOD_NOT_ALLOWED",
+        "IDEMPOTENCY_CONFLICT",
+        "INDEX_NOT_READY",
+        "EVENT_CURSOR_EXPIRED",
+        "PAYLOAD_TOO_LARGE",
+        "RATE_LIMITED",
+        "BUDGET_EXCEEDED",
+        "DEPENDENCY_UNAVAILABLE",
+        "PROVIDER_UNAVAILABLE",
+        "PROVIDER_TIMEOUT",
+        "INTERNAL_ERROR"
+      ],
+      "title": "Code",
+      "type": "string"
+    },
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "status",
+    "detail",
+    "code",
+    "request_id"
+  ],
+  "title": "Problem",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

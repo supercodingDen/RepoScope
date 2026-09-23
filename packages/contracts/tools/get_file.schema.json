@@ -1,0 +1,41 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "repository_id": {
+      "format": "uuid",
+      "title": "Repository Id",
+      "type": "string"
+    },
+    "generation_id": {
+      "format": "uuid",
+      "title": "Generation Id",
+      "type": "string"
+    },
+    "path": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Path",
+      "type": "string"
+    },
+    "start_line": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Start Line",
+      "type": "integer"
+    },
+    "end_line": {
+      "minimum": 1,
+      "title": "End Line",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "repository_id",
+    "generation_id",
+    "path",
+    "end_line"
+  ],
+  "title": "GetFileTool",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

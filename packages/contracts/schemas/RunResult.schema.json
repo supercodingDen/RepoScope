@@ -1,0 +1,106 @@
+{
+  "$defs": {
+    "Citation": {
+      "additionalProperties": false,
+      "properties": {
+        "chunk_id": {
+          "format": "uuid",
+          "title": "Chunk Id",
+          "type": "string"
+        },
+        "repository_id": {
+          "format": "uuid",
+          "title": "Repository Id",
+          "type": "string"
+        },
+        "generation_id": {
+          "format": "uuid",
+          "title": "Generation Id",
+          "type": "string"
+        },
+        "commit_sha": {
+          "pattern": "^[a-f0-9]{40}$",
+          "title": "Commit Sha",
+          "type": "string"
+        },
+        "path": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "start_line": {
+          "minimum": 1,
+          "title": "Start Line",
+          "type": "integer"
+        },
+        "end_line": {
+          "minimum": 1,
+          "title": "End Line",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "chunk_id",
+        "repository_id",
+        "generation_id",
+        "commit_sha",
+        "path",
+        "start_line",
+        "end_line"
+      ],
+      "title": "Citation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "answer": {
+      "maxLength": 16000,
+      "minLength": 1,
+      "title": "Answer",
+      "type": "string"
+    },
+    "citations": {
+      "items": {
+        "$ref": "#/$defs/Citation"
+      },
+      "maxItems": 20,
+      "title": "Citations",
+      "type": "array"
+    },
+    "evidence_status": {
+      "enum": [
+        "supported",
+        "insufficient"
+      ],
+      "title": "Evidence Status",
+      "type": "string"
+    },
+    "model": {
+      "enum": [
+        "mock",
+        "gpt-5.6-luna",
+        "gpt-5.6-terra",
+        "gpt-5.6-sol"
+      ],
+      "title": "Model",
+      "type": "string"
+    },
+    "estimated_cost_usd": {
+      "pattern": "^\\d+\\.\\d{6}$",
+      "title": "Estimated Cost Usd",
+      "type": "string"
+    }
+  },
+  "required": [
+    "answer",
+    "citations",
+    "evidence_status",
+    "model",
+    "estimated_cost_usd"
+  ],
+  "title": "RunResult",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

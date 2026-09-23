@@ -1,0 +1,54 @@
+{
+  "policy_version": "routing-v1",
+  "provider_mode": "mock",
+  "allow_paid_api_calls": false,
+  "default_model": "gpt-5.6-luna",
+  "escalation_model": "gpt-5.6-terra",
+  "expert_model": "gpt-5.6-sol",
+  "allow_model_escalation": false,
+  "allow_expert_model": false,
+  "reasoning_effort": "low",
+  "routing_strategy": "evidence_first_conditional_escalation",
+  "price_checked_at": "2026-09-16",
+  "price_validity_days": 30,
+  "prices_usd_per_million_tokens": {
+    "gpt-5.6-luna": {"input": "0.20", "output": "1.20"},
+    "gpt-5.6-terra": {"input": "2.00", "output": "12.00"},
+    "gpt-5.6-sol": {"input": "4.00", "output": "20.00"},
+    "text-embedding-3-small": {"input": "0.02"}
+  },
+  "embedding": {
+    "model": "text-embedding-3-small",
+    "dimensions": 384,
+    "tokenizer": "cl100k_base",
+    "space_version": "openai-small-384-v1",
+    "max_chunk_tokens": 800,
+    "batch_size": 32,
+    "batch_max_tokens": 20000,
+    "concurrency": 2
+  },
+  "context": {
+    "max_input_tokens_per_call": 24000,
+    "max_output_tokens_per_call": 2000,
+    "max_evidence_tokens": 8000,
+    "max_evidence_chunks": 12,
+    "dependency_hops": 1,
+    "max_expansion_chunks": 4,
+    "max_tool_result_tokens": 4000
+  },
+  "execution": {
+    "max_agent_steps": 6,
+    "max_model_attempts_per_run": 6,
+    "provider_timeout_seconds": 45,
+    "run_deadline_seconds": 120,
+    "sdk_max_retries": 0
+  },
+  "budget": {
+    "max_run_cost_usd": "0.10",
+    "max_daily_cost_usd": "1.00",
+    "max_project_cost_usd": "4.00",
+    "reserve_margin_percent": 20,
+    "unknown_price_action": "deny_paid_call",
+    "uncertain_call_action": "retain_reservation"
+  }
+}

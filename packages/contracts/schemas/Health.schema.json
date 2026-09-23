@@ -1,0 +1,19 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "enum": [
+        "ok",
+        "degraded"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "status"
+  ],
+  "title": "Health",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}
