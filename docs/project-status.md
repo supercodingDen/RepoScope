@@ -43,4 +43,4 @@ Disk limits are enforced by monitoring and finalization checks, with possible tr
 
 T06: bounded indexing/chunking, reproducible embeddings and atomic ready-generation publication. Until T06 is implemented, source acquisition stops at the durable staged handoff; the original overall job deadline still applies. T08 agent execution is also not implemented by this delivery.
 
-The extracted project has no Git metadata. No commit, push, PR, remote CI, hosted deployment or system installation was performed. Earlier T03 evidence remains in `docs/verification/t03-checks.txt`, `t03-native-checks.txt` and the T03 API guide.
+The reviewed source was synchronized to the owner's private GitHub repository, `supercodingDen/RepoScope`, on 2026-09-23 UTC (initial import commit `2c0e6f015588db0906c8ba50cb0448e5a505acfe`). The D-drive extraction has no persistent local Git history; synchronization used the connected GitHub integration. Public release, PR, remote CI, hosted deployment and system installation were not performed. Earlier T03 evidence remains in `docs/verification/t03-checks.txt`, `t03-native-checks.txt` and the T03 API guide.

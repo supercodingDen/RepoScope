@@ -17,4 +17,4 @@ Read docs/spec.md, docs/architecture.md, docs/project-status.md, and the relevan
 - Declare dependencies before implementation, commit uv.lock, and use uv sync --frozen --all-groups. Do not add unreviewed libraries or floating deployment images.
 - Generated schemas are derived from contracts/models.py. Run scripts/export_contracts.py after contract changes; review generated diffs and negative examples.
 - Tests must cover observable contracts, failure semantics, and security boundaries. Do not fabricate live-provider checks, deployment status, or benchmark results.
-- Update docs/project-status.md with evidence and the next task. GitHub publication is T14; hosted deployment is T15. Never claim either based on local files alone.
+- Update docs/project-status.md with evidence and the next task. After each complete task, synchronize reviewed files to the owner's private GitHub RepoScope repository after tests and secret checks, as authorized on 2026-09-23. Public publication and a versioned release remain T14; hosted deployment remains T15. Never claim any remote result based on local files alone.
