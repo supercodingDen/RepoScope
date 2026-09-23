@@ -13,7 +13,7 @@ Verification date: 2026-09-23 UTC. Working project: `D:\RepoScope_project\reposc
 | --- | --- |
 | Full offline pytest | 333 passed, 71 skipped |
 | Native PostgreSQL/NATS/public GitHub integration | 74 passed, 1 optional benchmark skipped in 80.56 s |
-| Strict mypy, Ruff lint/format | Passed; 95 Python files type-checked on Windows and Linux targets; 128 files formatted |
+| Strict mypy, Ruff lint/format | Passed; 95 Python files type-checked on Windows and Linux targets; 129 files formatted |
 | Initial 1,009-real-chunk retrieval baseline | Exact DB p95 94.199 ms; HNSW-eligible DB p95 98.325 ms; end-to-end mock text p95 93.866 ms; 3 × 20 serial queries after warm-up |
 | Independent review | [Filtered ANN underfill fixed and closure reviewed](verification/t07-review.md); no remaining Critical or Important finding |
 | Redacted source-only Gitleaks | 207 reviewed files, approximately 1.11 MB; no leaks found |
