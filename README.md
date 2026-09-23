@@ -2,7 +2,7 @@
 
 Event-driven code intelligence with source-grounded answers and bounded agent costs.
 
-**Current milestone: T02 — application skeleton and quality gates.** FastAPI lifecycle, separate indexer/agent entry points, dependency readiness, one-shot migrations, Docker Compose, and CI are included. Executed evidence and container acceptance status are recorded in [project status](docs/project-status.md). Import, search, and agent business workflows arrive in later tasks.
+**Current milestone: T05 — durable source acquisition and staging.** T02 delivered the runtime and quality gates; T03 added persistent authenticated work admission; T04 added reliable event delivery and recovery; T05 added bounded public GitHub acquisition and a deterministic source manifest. Acquired source is staged for T06 indexing. Retrieval and agent execution remain later milestones. See [project status](docs/project-status.md) for executed checks and the outstanding Docker/Compose acceptance.
 
 ## Start
 
@@ -36,9 +36,9 @@ The last command needs a running Docker daemon and uses an isolated disposable C
 
 ## Architecture
 
-Three Python roles share typed contracts and a layered package: FastAPI API/control plane, indexer, and agent. PostgreSQL/pgvector owns state, JetStream delivers durable work, and Redis owns disposable admission/cache state. Read [architecture](docs/architecture.md), [specification](docs/spec.md), and [roadmap](docs/roadmap.md).
+Three Python roles share typed contracts and a layered package: FastAPI API/control plane, indexer, and agent. PostgreSQL/pgvector owns durable state and admission, JetStream delivers durable work, and Redis is a disposable runtime dependency. Read [architecture](docs/architecture.md), [specification](docs/spec.md), and [roadmap](docs/roadmap.md).
 
-Source acquisition, retrieval, and read-only agent tools remain future milestones. Repository code must never execute. T02 runtime paths are mock-only and make no paid calls.
+Source acquisition is implemented without executing repository code. Indexing, retrieval, and read-only agent tools remain future milestones. Provider calls stay mocked by default; no paid provider call was made in the T05 checks.
 
 ## Configuration and secrets
 
@@ -53,4 +53,4 @@ Secret fields in `.env.example` are blank. Configure them locally; never send se
 - [Threat model](docs/threat-model.md) and [model policy](docs/model-policy.md)
 - [Requirements](docs/requirements.md) and [status/evidence](docs/project-status.md)
 
-No GitHub remote or hosted deployment was created in T02. Apache-2.0 remains proposed; formal licensing and notices are part of T13.
+Code through T05 is synchronized to the owner's private [GitHub repository](https://github.com/supercodingDen/RepoScope). Public release is scheduled for T14 and hosted deployment for T15. Apache-2.0 remains proposed; formal licensing and notices are part of T13.
