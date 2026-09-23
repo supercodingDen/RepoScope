@@ -83,6 +83,8 @@ class OpenAIAgentProvider:
             },
             store=False,
         )
+        if response.status != "completed":
+            raise ValueError("Incomplete model response")
         calls = tuple(
             ToolCall(item.call_id, item.name, item.arguments)
             for item in response.output
@@ -115,3 +117,4 @@ class OpenAIAgentProvider:
         except (KeyError, TypeError, ValueError, json.JSONDecodeError):
             raise ValueError("Invalid model result") from None
         return ModelTurn((), answer, citations, input_tokens, output_tokens)
+
