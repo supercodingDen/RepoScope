@@ -2,7 +2,7 @@
 
 Event-driven code intelligence with source-grounded answers and bounded agent costs.
 
-**Current milestone: T11 — public boundary and security review.** T02–T10 delivered the runtime, admission, durable work, pinned source acquisition, indexing, retrieval, read-only agent, resumable events, and operations checks. T11 adds endpoint hardening, non-root infrastructure roles, and repeatable source/image security scans. See [project status](docs/project-status.md) for executed checks and outstanding gates.
+**Current milestone: T12 — scale benchmark and retrieval tuning.** T02–T11 delivered the runtime, ingestion, retrieval, agent, operations, and security boundary. T12 measured 100,029 real source chunks and 200 fixed queries, then added a published-generation count and a tuned HNSW index. Recall and database vector latency meet their local benchmark targets; 32-client end-to-end search p95 remains above 100 ms. See [T12 performance evidence](docs/t12-performance.md) and [project status](docs/project-status.md) for the measured limits.
 
 ## Start
 
@@ -18,7 +18,7 @@ Copy `.env.example` to `.env` locally. Set distinct random hexadecimal `POSTGRES
 docker compose up --build --wait --wait-timeout 180
 ```
 
-Use [health](http://127.0.0.1:8000/healthz) and [readiness](http://127.0.0.1:8000/readyz). Data services and worker management ports are private. The [development guide](docs/development.md) covers Windows setup, shutdown, and dependency-failure tests. [T11 security review](docs/t11-security.md) records the public API boundary, scans, and remaining hosting work.
+Use [health](http://127.0.0.1:8000/healthz) and [readiness](http://127.0.0.1:8000/readyz). Data services and worker management ports are private. The [development guide](docs/development.md) covers Windows setup, shutdown, and dependency-failure tests. [T11 security review](docs/t11-security.md) records the public API boundary, scans, and remaining hosting work. The T12 HNSW migration can take several minutes on an existing 100K-chunk database; plan an indexing write pause during upgrade.
 
 ## Verify
 

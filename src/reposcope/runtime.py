@@ -17,7 +17,7 @@ from psycopg_pool import AsyncConnectionPool
 from reposcope.metrics import DEPENDENCY_READY
 from reposcope.settings import RuntimeSettings
 
-INITIAL_MIGRATION_VERSION = "0007_run_events"
+INITIAL_MIGRATION_VERSION = "0009_tuned_hnsw"
 LOGGER = logging.getLogger("reposcope.runtime")
 
 

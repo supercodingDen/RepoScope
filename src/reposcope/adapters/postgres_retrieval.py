@@ -70,8 +70,8 @@ class PostgresRetrievalRepository:
         async with asyncio.timeout(10), self.pool.connection() as connection:
             cursor = await connection.execute(
                 "SELECT g.generation_id,g.commit_sha,g.embedding_space_version,g.status,"
-                "(SELECT count(*)::integer FROM reposcope.index_chunks c "
-                "WHERE c.generation_id=g.generation_id) "
+                "coalesce(g.chunk_count,(SELECT count(*)::integer "
+                "FROM reposcope.index_chunks c WHERE c.generation_id=g.generation_id)) "
                 "FROM reposcope.repositories r LEFT JOIN reposcope.index_generations g "
                 "ON g.generation_id=r.active_generation_id "
                 "WHERE r.repository_id=%s AND r.principal_id=%s",
@@ -94,8 +94,8 @@ class PostgresRetrievalRepository:
         async with asyncio.timeout(10), self.pool.connection() as connection:
             cursor = await connection.execute(
                 "SELECT g.embedding_space_version,g.status,"
-                "(SELECT count(*)::integer FROM reposcope.index_chunks c "
-                "WHERE c.generation_id=g.generation_id) "
+                "coalesce(g.chunk_count,(SELECT count(*)::integer "
+                "FROM reposcope.index_chunks c WHERE c.generation_id=g.generation_id)) "
                 "FROM reposcope.repositories r "
                 "JOIN reposcope.index_generations g ON g.repository_id=r.repository_id "
                 "WHERE r.repository_id=%s AND r.principal_id=%s "
@@ -147,7 +147,7 @@ class PostgresRetrievalRepository:
             async with connection.transaction():
                 await connection.execute("SET LOCAL statement_timeout='9000ms'")
                 if not exact:
-                    await connection.execute("SET LOCAL hnsw.ef_search=80")
+                    await connection.execute("SET LOCAL hnsw.ef_search=420")
                     await connection.execute("SET LOCAL hnsw.iterative_scan='strict_order'")
 
                 async def load_exact() -> tuple[Candidate, ...]:

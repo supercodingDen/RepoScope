@@ -1,7 +1,23 @@
 # Project status
 
-Milestone: **T11 public boundary and security review implemented locally**.
+Milestone: **T12 scale benchmark and retrieval tuning implemented locally; performance acceptance remains open**.
 Verification date: 2026-09-24 UTC. Working project: `D:\RepoScope_project\reposcope`.
+
+## T12 delivery and verification
+
+- A fixed benchmark corpus contains 100,029 real code chunks from 4,782 distinct public source files, with a reproducible fingerprint and 200 fixed code-location queries. Raw per-query and per-request results, three measured trials, exact/HNSW sweeps, filtered recall, 32-client application search, SQL plans, a batch/concurrency experiment, and a non-search HTTP profile are documented in the [T12 performance guide](t12-performance.md). The source is not redistributed and no paid provider call was made.
+- Migration `0008_generation_chunk_count` stores the published generation's verified chunk count. This removed per-search `count(*)` work and raised the 32-client median QPS from 367.072 to 439.324 while reducing median p95 from 101.421 to 93.397 ms on the baseline index. Warm-cache progression limits exact attribution; all individual trials are retained.
+- Migration `0009_tuned_hnsw` builds a higher-connectivity index. With ef_search=420, unfiltered Recall@10 against exact is 0.9235 and filtered `cpython/` Recall@10 is 0.917. Database vector p95 is below 75 ms in all three trials of both profiles. The new index took 359.223 seconds to build on this machine; migrations have an explicit bounded extended deadline.
+- The shipped 10-connection search profile delivered 79.762/80.173/80.046 QPS with zero errors, but its p95 was 444.611/438.126/442.384 ms for 32 continuously active clients. The 100-ms search target therefore remains **open**. A separate development-stack `/healthz` HTTP profile also missed the 30-ms non-search target. Live-provider latency, semantic relevance, full-agent overhead and the 30-minute production ingestion gate were not measured by this mock/composite retrieval benchmark.
+- A stored full-text-vector change and an inner-product index were tested and rejected after neither improved the measured trade-off. The raw evidence includes both experiments.
+
+| T12 local check | Executed result |
+| --- | --- |
+| Full offline pytest | 368 passed, 80 opt-in skipped |
+| Strict mypy and Ruff | Passed; 127 Python files type-checked |
+| Contracts | 48 exports current; 20 schema/example pairs and 2 OpenAPI documents valid |
+| Isolated Docker/Compose smoke | Passed startup, all container integration tests, business API, PostgreSQL/Redis/NATS outage and recovery, and graceful shutdown |
+| Source-only Gitleaks | 261 reviewed files, 1.37 MB scanned; no leaks found |
 
 ## T11 delivery and verification
 
@@ -151,6 +167,6 @@ Disk limits are enforced by monitoring and finalization checks, with possible tr
 
 ## Next milestone
 
-T12: 100K real chunks, 200+ fixed queries, two measured improvements, and raw before/after results. Hosted HTTPS access and backup/restore remain T15. The original overall job deadline still applies to source acquisition and indexing.
+T13: final English documentation, license and notices. The open T12 search-latency, non-search HTTP, semantic-quality, live-provider and single-job ingestion gates remain tracked; they must not be described as passed in T13 or the final handover. Hosted HTTPS access and backup/restore remain T15. The original overall job deadline still applies to source acquisition and indexing.
 
 The reviewed source is synchronized to the owner's private GitHub repository, `supercodingDen/RepoScope`, after each complete task. The D-drive extraction has no persistent local Git history; synchronization uses the connected GitHub integration. Public release, PR, hosted deployment and system installation were not performed. Remote CI results have not been verified. Earlier T03 evidence remains in `docs/verification/t03-checks.txt`, `t03-native-checks.txt` and the T03 API guide.

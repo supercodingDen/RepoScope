@@ -1,0 +1,87 @@
+{
+  "archive": "t12-raw-evidence.zip",
+  "archive_bytes": 1713966,
+  "archive_sha256": "d04e56fd0d8392cd5c41b051b61b5e37e1e2de3fcb136e5f21ae77be60ee4557",
+  "files": [
+    {
+      "bytes": 5161100,
+      "name": "t12-before.json",
+      "sha256": "93d35660e3009e9090299e51c15c0f232baba1f918539ff8b685ca2122456f5e"
+    },
+    {
+      "bytes": 5782683,
+      "name": "t12-after-count.json",
+      "sha256": "5385b952ef06db8028f69b63be95f6c26750b31e0ff6da5134fc36c2111f1e46"
+    },
+    {
+      "bytes": 5030807,
+      "name": "t12-after-fts.json",
+      "sha256": "7c9e0ee2215cbff853a3f455cbfdced10a2435c3738a82dd04f6e7cb8ebd2400"
+    },
+    {
+      "bytes": 655088,
+      "name": "t12-hnsw-m64.json",
+      "sha256": "f6b4d033c17da67c37c399176dce356064f3dff9df37261d14c81af0843e8b1b"
+    },
+    {
+      "bytes": 655105,
+      "name": "t12-hnsw-ip.json",
+      "sha256": "ff3614c4868c20a6dcce2f2e30b651e71229bcdd87a3842b1ca82aed3e08755b"
+    },
+    {
+      "bytes": 515332,
+      "name": "t12-final-search.json",
+      "sha256": "785d57a47a49d28c40d72db6c8359ce0b02b30aff9dbee97e53405f6d1a531a6"
+    },
+    {
+      "bytes": 1096879,
+      "name": "t12-final-pool10.json",
+      "sha256": "a6559d1fa077983855a76e967c95de0b4efc4504d175b27f2cf809944b080afe"
+    },
+    {
+      "bytes": 1057201,
+      "name": "t12-final-420-pool10.json",
+      "sha256": "4e00be195f5f624dd2a680fb2642246d432151b440f8dd3a1fa0a0cc7a0707f2"
+    },
+    {
+      "bytes": 205842,
+      "name": "t12-unfiltered-420.json",
+      "sha256": "0953b7eee0a52c1297917a717eace34babc74403c13a12da3490889a029d877b"
+    },
+    {
+      "bytes": 196138,
+      "name": "t12-filtered-cpython.json",
+      "sha256": "d6e8d58aaf35e1d240a958ff96526d27ff00580340f69249f32d2a82c69cedee"
+    },
+    {
+      "bytes": 420533,
+      "name": "t12-filtered-sweep.json",
+      "sha256": "e51c0eb0a7a38bc66ce62a3c1df0a85a919532216f3e28fd8a3695ff9cfda269"
+    },
+    {
+      "bytes": 101520,
+      "name": "t12-health.json",
+      "sha256": "9a089c3206e4806727a1e52d27774f59510fc1a002b7cf7502a4b1a790731e5d"
+    },
+    {
+      "bytes": 5078,
+      "name": "t12-batches.json",
+      "sha256": "50a052abcbfd51bfcd58e212fe68f27a5518ca2bca9eba6f004014907f7b5146"
+    },
+    {
+      "bytes": 37987,
+      "name": "t12-sql-plans.json",
+      "sha256": "aac4aa71c25649df6414154ad9d2d5102708bfb6fb2bf541a1ed1b4f55491550"
+    },
+    {
+      "bytes": 822,
+      "name": "t12-load.json",
+      "sha256": "b3123ec2ecc239215a4d1dde5f83bb6b07cbd54989ccd76e549d8a34668122f7"
+    },
+    {
+      "bytes": 822,
+      "name": "t12-load-tuned.json",
+      "sha256": "bd333561afe3beb8e6446af2699a4e42c43f0866ed00cb178f96e6898720b5b3"
+    }
+  ]
+}

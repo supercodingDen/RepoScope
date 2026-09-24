@@ -85,9 +85,23 @@ async def test_migrations_are_idempotent_atomic_and_restrict_runtime_role() -> N
             "0005_index",
             "0006_agent",
             "0007_run_events",
+            "0008_generation_chunk_count",
+            "0009_tuned_hnsw",
         }
     )
     assert second_run.applied_versions == ()
+
+    index_options = await AsyncConnection[tuple[str, ...]].connect(
+        config.database_url, autocommit=True
+    )
+    try:
+        cursor = await index_options.execute(
+            "SELECT reloptions FROM pg_class WHERE oid='reposcope.index_chunks_vector'::regclass"
+        )
+        row = await cursor.fetchone()
+        assert row is not None and set(row[0]) == {"m=64", "ef_construction=400"}
+    finally:
+        await index_options.close()
 
     runtime_connection = await AsyncConnection[tuple[str, ...]].connect(
         runtime_database_url, autocommit=True

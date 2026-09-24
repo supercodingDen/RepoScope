@@ -224,13 +224,15 @@ class PostgresIndexRepository:
             status = "ready" if current else "superseded"
             await connection.execute(
                 "UPDATE reposcope.index_generations SET status=%s,parser_version=%s,"
-                "tokenizer_version=%s,embedding_space_version=%s,updated_at=clock_timestamp() "
+                "tokenizer_version=%s,embedding_space_version=%s,chunk_count=%s,"
+                "updated_at=clock_timestamp() "
                 "WHERE generation_id=%s AND status='staged'",
                 (
                     status,
                     PARSER_VERSION + "/" + CHUNK_POLICY_VERSION,
                     TOKENIZER_VERSION,
                     space_version,
+                    chunks[0],
                     lease.event.payload.generation_id,
                 ),
             )

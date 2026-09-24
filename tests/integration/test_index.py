@@ -101,6 +101,11 @@ async def test_duplicate_source_bytes_retain_distinct_citations_and_publish_atom
         "SELECT status,progress_percent::text,index_attempts::text FROM reposcope.jobs"
     )
     assert await cursor.fetchone() == ("succeeded", "100", "1")
+    cursor = await database.owner.execute(
+        "SELECT chunk_count::text FROM reposcope.index_generations WHERE generation_id=%s",
+        (event.payload.generation_id,),
+    )
+    assert await cursor.fetchone() == ("2",)
     with pytest.raises(LeaseLost):
         await handler.repository.prepare(lease, handler.pipeline_version)
 
@@ -199,10 +204,10 @@ async def test_superseded_generation_never_replaces_active_pointer(
     handler = IndexHandler(PostgresIndexRepository(delivery), store, MockEmbeddingProvider())
     assert isinstance(await handler.handle(lease), Staged)
     cursor = await database.owner.execute(
-        "SELECT status FROM reposcope.index_generations WHERE generation_id=%s",
+        "SELECT status,chunk_count::text FROM reposcope.index_generations WHERE generation_id=%s",
         (event.payload.generation_id,),
     )
-    assert await cursor.fetchone() == ("superseded",)
+    assert await cursor.fetchone() == ("superseded", "1")
     cursor = await database.owner.execute(
         "SELECT active_generation_id::text FROM reposcope.repositories"
     )
@@ -220,10 +225,10 @@ async def test_empty_eligible_generation_is_ready(
     handler = IndexHandler(PostgresIndexRepository(delivery), store, MockEmbeddingProvider())
     assert isinstance(await handler.handle(lease), Staged)
     cursor = await database.owner.execute(
-        "SELECT status FROM reposcope.index_generations WHERE generation_id=%s",
+        "SELECT status,chunk_count::text FROM reposcope.index_generations WHERE generation_id=%s",
         (event.payload.generation_id,),
     )
-    assert await cursor.fetchone() == ("ready",)
+    assert await cursor.fetchone() == ("ready", "0")
 
 
 @pytest.mark.asyncio

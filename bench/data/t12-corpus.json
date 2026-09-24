@@ -1,0 +1,1014 @@
+{
+  "provenance": {
+    "chunks": 100029,
+    "embedding_space": "mock-sha256-384-l2-v1",
+    "files": 4782,
+    "imported_code_executed": false,
+    "source_bytes": 49152059,
+    "source_fingerprint": "6bfb40572e297039d0c800e3dc0b7e8e0ffda363ca37906105ca5fd2b94254e2",
+    "source_redistributed": false,
+    "sources": "CPython 3.12.14 Lib/Tools and uv.lock-installed public Python packages"
+  },
+  "queries": [
+    {
+      "id": "q001",
+      "query": "Where is AsyncMessagesWithStreamingResponse implemented?",
+      "source_path": "packages/openai/resources/beta/threads/messages.py"
+    },
+    {
+      "id": "q002",
+      "query": "Where is _safe_tuple implemented?",
+      "source_path": "cpython/pprint.py"
+    },
+    {
+      "id": "q003",
+      "query": "Where is _validate_no_invalid_chars implemented?",
+      "source_path": "packages/redis/driver_info.py"
+    },
+    {
+      "id": "q004",
+      "query": "Where is ints_to_rgba implemented?",
+      "source_path": "packages/pydantic/color.py"
+    },
+    {
+      "id": "q005",
+      "query": "Where is gen_elixir_sigstr_rules implemented?",
+      "source_path": "packages/pygments/lexers/erlang.py"
+    },
+    {
+      "id": "q006",
+      "query": "Where is parse_cost_equation implemented?",
+      "source_path": "packages/regex/_regex_core.py"
+    },
+    {
+      "id": "q007",
+      "query": "Where is HaxeLexer implemented?",
+      "source_path": "packages/pygments/lexers/haxe.py"
+    },
+    {
+      "id": "q008",
+      "query": "Where is ScreenContext implemented?",
+      "source_path": "cpython/site-packages/pip/_vendor/rich/console.py"
+    },
+    {
+      "id": "q009",
+      "query": "Where is is_subtype_helper implemented?",
+      "source_path": "packages/mypy/stubtest.py"
+    },
+    {
+      "id": "q010",
+      "query": "Where is askretrycancel implemented?",
+      "source_path": "cpython/tkinter/messagebox.py"
+    },
+    {
+      "id": "q011",
+      "query": "Where is GetoptError implemented?",
+      "source_path": "cpython/getopt.py"
+    },
+    {
+      "id": "q012",
+      "query": "Where is _Accumulator implemented?",
+      "source_path": "cpython/email/header.py"
+    },
+    {
+      "id": "q013",
+      "query": "Where is getHandlerByName implemented?",
+      "source_path": "cpython/logging/__init__.py"
+    },
+    {
+      "id": "q014",
+      "query": "Where is resolve_aws_region_with_source implemented?",
+      "source_path": "packages/openai/lib/_bedrock_auth.py"
+    },
+    {
+      "id": "q015",
+      "query": "Where is getmodule implemented?",
+      "source_path": "cpython/inspect.py"
+    },
+    {
+      "id": "q016",
+      "query": "Where is setup_env_for_generator_class implemented?",
+      "source_path": "packages/mypyc/irbuild/generator.py"
+    },
+    {
+      "id": "q017",
+      "query": "Where is format_directory_size implemented?",
+      "source_path": "cpython/site-packages/pip/_internal/utils/filesystem.py"
+    },
+    {
+      "id": "q018",
+      "query": "Where is _get_decompressor implemented?",
+      "source_path": "cpython/zipfile/__init__.py"
+    },
+    {
+      "id": "q019",
+      "query": "Where is wheel_event implemented?",
+      "source_path": "cpython/idlelib/tree.py"
+    },
+    {
+      "id": "q020",
+      "query": "Where is _LowerBound implemented?",
+      "source_path": "cpython/site-packages/pip/_vendor/packaging/specifiers.py"
+    },
+    {
+      "id": "q021",
+      "query": "Where is check_list_path_option implemented?",
+      "source_path": "cpython/site-packages/pip/_internal/cli/cmdoptions.py"
+    },
+    {
+      "id": "q022",
+      "query": "Where is get_base_exception implemented?",
+      "source_path": "packages/psycopg/errors.py"
+    },
+    {
+      "id": "q023",
+      "query": "Where is has_underscore_prefix implemented?",
+      "source_path": "packages/mypy/subtypes.py"
+    },
+    {
+      "id": "q024",
+      "query": "Where is ParamDef implemented?",
+      "source_path": "packages/psycopg/_conninfo_utils.py"
+    },
+    {
+      "id": "q025",
+      "query": "Where is create_compatible_tags_selector implemented?",
+      "source_path": "cpython/site-packages/pip/_vendor/packaging/tags.py"
+    },
+    {
+      "id": "q026",
+      "query": "Where is RegexLexer implemented?",
+      "source_path": "cpython/site-packages/pip/_vendor/pygments/lexer.py"
+    },
+    {
+      "id": "q027",
+      "query": "Where is create_task_group implemented?",
+      "source_path": "packages/anyio/_core/_tasks.py"
+    },
+    {
+      "id": "q028",
+      "query": "Where is update_deps implemented?",
+      "source_path": "packages/mypy/server/update.py"
+    },
+    {
+      "id": "q029",
+      "query": "Where is reset_settings_cache implemented?",
+      "source_path": "packages/openapi_schema_validator/settings.py"
+    },
+    {
+      "id": "q030",
+      "query": "Where is SetError implemented?",
+      "source_path": "packages/pydantic/v1/errors.py"
+    },
+    {
+      "id": "q031",
+      "query": "Where is Full implemented?",
+      "source_path": "cpython/queue.py"
+    },
+    {
+      "id": "q032",
+      "query": "Where is copychunked implemented?",
+      "source_path": "packages/_pytest/_py/path.py"
+    },
+    {
+      "id": "q033",
+      "query": "Where is pytest_runtest_logfinish implemented?",
+      "source_path": "packages/_pytest/hookspec.py"
+    },
+    {
+      "id": "q034",
+      "query": "Where is ImageGenerationInputImageMask implemented?",
+      "source_path": "packages/openai/types/beta/beta_tool.py"
+    },
+    {
+      "id": "q035",
+      "query": "Where is get_class_descriptors implemented?",
+      "source_path": "packages/mypy/util.py"
+    },
+    {
+      "id": "q036",
+      "query": "Where is free_tcp_port_factory implemented?",
+      "source_path": "packages/anyio/pytest_plugin.py"
+    },
+    {
+      "id": "q037",
+      "query": "Where is ExtPage implemented?",
+      "source_path": "cpython/idlelib/configdialog.py"
+    },
+    {
+      "id": "q038",
+      "query": "Where is CompactedResponse implemented?",
+      "source_path": "packages/openai/types/responses/compacted_response.py"
+    },
+    {
+      "id": "q039",
+      "query": "Where is getlocale implemented?",
+      "source_path": "cpython/locale.py"
+    },
+    {
+      "id": "q040",
+      "query": "Where is YamlJinjaLexer implemented?",
+      "source_path": "packages/pygments/lexers/templates.py"
+    },
+    {
+      "id": "q041",
+      "query": "Where is BetaResponseContentPartWsAdded implemented?",
+      "source_path": "packages/openai/types/beta/beta_responses_server_event.py"
+    },
+    {
+      "id": "q042",
+      "query": "Where is ThreadToolResourcesCodeInterpreter implemented?",
+      "source_path": "packages/openai/types/beta/thread_create_and_run_params.py"
+    },
+    {
+      "id": "q043",
+      "query": "Where is AlloyLexer implemented?",
+      "source_path": "packages/pygments/lexers/dsls.py"
+    },
+    {
+      "id": "q044",
+      "query": "Where is default_subprocess_runner implemented?",
+      "source_path": "cpython/site-packages/pip/_vendor/pyproject_hooks/_impl.py"
+    },
+    {
+      "id": "q045",
+      "query": "Where is is_constant implemented?",
+      "source_path": "packages/mypyc/irbuild/util.py"
+    },
+    {
+      "id": "q046",
+      "query": "Where is UsersWithStreamingResponse implemented?",
+      "source_path": "packages/openai/resources/admin/organization/groups/users.py"
+    },
+    {
+      "id": "q047",
+      "query": "Where is LocalEnvironmentParam implemented?",
+      "source_path": "packages/openai/types/responses/local_environment_param.py"
+    },
+    {
+      "id": "q048",
+      "query": "Where is win32_ver implemented?",
+      "source_path": "cpython/platform.py"
+    },
+    {
+      "id": "q049",
+      "query": "Where is Run implemented?",
+      "source_path": "packages/openai/types/beta/threads/run.py"
+    },
+    {
+      "id": "q050",
+      "query": "Where is NamespaceProxy implemented?",
+      "source_path": "cpython/multiprocessing/managers.py"
+    },
+    {
+      "id": "q051",
+      "query": "Where is _check_not_importing_main implemented?",
+      "source_path": "cpython/multiprocessing/spawn.py"
+    },
+    {
+      "id": "q052",
+      "query": "Where is ulabel implemented?",
+      "source_path": "cpython/site-packages/pip/_vendor/idna/core.py"
+    },
+    {
+      "id": "q053",
+      "query": "Where is ismethodwrapper implemented?",
+      "source_path": "cpython/inspect.py"
+    },
+    {
+      "id": "q054",
+      "query": "Where is _typevar_subst implemented?",
+      "source_path": "cpython/typing.py"
+    },
+    {
+      "id": "q055",
+      "query": "Where is harmonic_mean implemented?",
+      "source_path": "cpython/statistics.py"
+    },
+    {
+      "id": "q056",
+      "query": "Where is ModerationOutputModerationResultsResult implemented?",
+      "source_path": "packages/openai/types/chat/chat_completion.py"
+    },
+    {
+      "id": "q057",
+      "query": "Where is AsyncVersionsWithRawResponse implemented?",
+      "source_path": "packages/openai/resources/skills/versions/versions.py"
+    },
+    {
+      "id": "q058",
+      "query": "Where is compute_rtype_alignment implemented?",
+      "source_path": "packages/mypyc/ir/rtypes.py"
+    },
+    {
+      "id": "q059",
+      "query": "Where is _sidebar_number_scrolling implemented?",
+      "source_path": "cpython/idlelib/sidebar.py"
+    },
+    {
+      "id": "q060",
+      "query": "Where is BetaResponseTextConfig implemented?",
+      "source_path": "packages/openai/types/beta/beta_response_text_config.py"
+    },
+    {
+      "id": "q061",
+      "query": "Where is _get_field implemented?",
+      "source_path": "cpython/dataclasses.py"
+    },
+    {
+      "id": "q062",
+      "query": "Where is ContainerNetworkPolicyDisabled implemented?",
+      "source_path": "packages/openai/types/responses/container_network_policy_disabled.py"
+    },
+    {
+      "id": "q063",
+      "query": "Where is ApplyPatchCallCallerProgram implemented?",
+      "source_path": "packages/openai/types/beta/beta_response_input_item.py"
+    },
+    {
+      "id": "q064",
+      "query": "Where is ReadOnlyError implemented?",
+      "source_path": "packages/redis/exceptions.py"
+    },
+    {
+      "id": "q065",
+      "query": "Where is AsyncStepsWithStreamingResponse implemented?",
+      "source_path": "packages/openai/resources/beta/threads/runs/steps.py"
+    },
+    {
+      "id": "q066",
+      "query": "Where is MissingDependenciesError implemented?",
+      "source_path": "cpython-tools/c-analyzer/c_parser/preprocessor/errors.py"
+    },
+    {
+      "id": "q067",
+      "query": "Where is CddlLexer implemented?",
+      "source_path": "packages/pygments/lexers/cddl.py"
+    },
+    {
+      "id": "q068",
+      "query": "Where is getfslineno implemented?",
+      "source_path": "packages/_pytest/_code/code.py"
+    },
+    {
+      "id": "q069",
+      "query": "Where is BaseFilePathHandler implemented?",
+      "source_path": "packages/jsonschema_path/handlers/file.py"
+    },
+    {
+      "id": "q070",
+      "query": "Where is FdwColumnNameNotFound implemented?",
+      "source_path": "packages/psycopg/errors.py"
+    },
+    {
+      "id": "q071",
+      "query": "Where is serialize implemented?",
+      "source_path": "packages/yaml/__init__.py"
+    },
+    {
+      "id": "q072",
+      "query": "Where is _make_order implemented?",
+      "source_path": "packages/attr/_make.py"
+    },
+    {
+      "id": "q073",
+      "query": "Where is ProcessingInstruction implemented?",
+      "source_path": "cpython/xml/dom/minidom.py"
+    },
+    {
+      "id": "q074",
+      "query": "Where is DefaultAsyncHttpx2Client implemented?",
+      "source_path": "packages/openai/_httpx2.py"
+    },
+    {
+      "id": "q075",
+      "query": "Where is iter_slices implemented?",
+      "source_path": "cpython/site-packages/pip/_vendor/requests/utils.py"
+    },
+    {
+      "id": "q076",
+      "query": "Where is LoadMem implemented?",
+      "source_path": "packages/mypyc/ir/ops.py"
+    },
+    {
+      "id": "q077",
+      "query": "Where is BrokenWorkerInterpreter implemented?",
+      "source_path": "packages/anyio/_core/_exceptions.py"
+    },
+    {
+      "id": "q078",
+      "query": "Where is unhex implemented?",
+      "source_path": "cpython/quopri.py"
+    },
+    {
+      "id": "q079",
+      "query": "Where is _TrustedHosts implemented?",
+      "source_path": "packages/uvicorn/middleware/proxy_headers.py"
+    },
+    {
+      "id": "q080",
+      "query": "Where is DivergingAliasDetector implemented?",
+      "source_path": "packages/mypy/typeanal.py"
+    },
+    {
+      "id": "q081",
+      "query": "Where is SafetyWithStreamingResponse implemented?",
+      "source_path": "packages/openai/resources/safety/safety.py"
+    },
+    {
+      "id": "q082",
+      "query": "Where is get_win_folder_if_csidl_name_not_env_var implemented?",
+      "source_path": "cpython/site-packages/pip/_vendor/platformdirs/windows.py"
+    },
+    {
+      "id": "q083",
+      "query": "Where is _test_generator implemented?",
+      "source_path": "cpython/random.py"
+    },
+    {
+      "id": "q084",
+      "query": "Where is catch_errors implemented?",
+      "source_path": "packages/mypyc/crash.py"
+    },
+    {
+      "id": "q085",
+      "query": "Where is _write_contents implemented?",
+      "source_path": "cpython/importlib/resources/_common.py"
+    },
+    {
+      "id": "q086",
+      "query": "Where is PromoteExpr implemented?",
+      "source_path": "packages/mypy/nodes.py"
+    },
+    {
+      "id": "q087",
+      "query": "Where is _incompatible_extension_module_restrictions implemented?",
+      "source_path": "cpython/importlib/util.py"
+    },
+    {
+      "id": "q088",
+      "query": "Where is _someone_save_us_the_module_of_the_caller implemented?",
+      "source_path": "packages/jsonschema/tests/_suite.py"
+    },
+    {
+      "id": "q089",
+      "query": "Where is Sectioned implemented?",
+      "source_path": "cpython/importlib/metadata/__init__.py"
+    },
+    {
+      "id": "q090",
+      "query": "Where is POTSType implemented?",
+      "source_path": "cpython-tools/c-analyzer/c_parser/info.py"
+    },
+    {
+      "id": "q091",
+      "query": "Where is OpenAPIV32ValueValidator implemented?",
+      "source_path": "packages/openapi_spec_validator/validation/keywords.py"
+    },
+    {
+      "id": "q092",
+      "query": "Where is SaviLexer implemented?",
+      "source_path": "packages/pygments/lexers/savi.py"
+    },
+    {
+      "id": "q093",
+      "query": "Where is _HighlightFunc implemented?",
+      "source_path": "packages/_pytest/assertion/_typing.py"
+    },
+    {
+      "id": "q094",
+      "query": "Where is ReaderError implemented?",
+      "source_path": "packages/yaml/reader.py"
+    },
+    {
+      "id": "q095",
+      "query": "Where is MozPreprocXulLexer implemented?",
+      "source_path": "packages/pygments/lexers/markup.py"
+    },
+    {
+      "id": "q096",
+      "query": "Where is _float_sqrt_of_frac implemented?",
+      "source_path": "cpython/statistics.py"
+    },
+    {
+      "id": "q097",
+      "query": "Where is MaxRetryError implemented?",
+      "source_path": "cpython/site-packages/pip/_vendor/urllib3/exceptions.py"
+    },
+    {
+      "id": "q098",
+      "query": "Where is get_validator_for implemented?",
+      "source_path": "packages/openapi_spec_validator/schemas/backend/__init__.py"
+    },
+    {
+      "id": "q099",
+      "query": "Where is or_ implemented?",
+      "source_path": "cpython/operator.py"
+    },
+    {
+      "id": "q100",
+      "query": "Where is create_subprocess_exec implemented?",
+      "source_path": "cpython/asyncio/subprocess.py"
+    },
+    {
+      "id": "q101",
+      "query": "Where is OAuthError implemented?",
+      "source_path": "packages/openai/_exceptions.py"
+    },
+    {
+      "id": "q102",
+      "query": "Where is MemberExpr implemented?",
+      "source_path": "packages/mypy/nodes.py"
+    },
+    {
+      "id": "q103",
+      "query": "Where is BetaResponseMcpListToolsInWsProgress implemented?",
+      "source_path": "packages/openai/types/beta/beta_responses_server_event.py"
+    },
+    {
+      "id": "q104",
+      "query": "Where is _iter_built_with_inserted implemented?",
+      "source_path": "cpython/site-packages/pip/_internal/resolution/resolvelib/found_candidates.py"
+    },
+    {
+      "id": "q105",
+      "query": "Where is or_conditional_maps implemented?",
+      "source_path": "packages/mypy/checker.py"
+    },
+    {
+      "id": "q106",
+      "query": "Where is ServiceAccountUpdateParams implemented?",
+      "source_path": "packages/openai/types/admin/organization/projects/service_account_update_params.py"
+    },
+    {
+      "id": "q107",
+      "query": "Where is FormalArgument implemented?",
+      "source_path": "packages/mypy/types.py"
+    },
+    {
+      "id": "q108",
+      "query": "Where is HTTPDigestAuthHandler implemented?",
+      "source_path": "cpython/urllib/request.py"
+    },
+    {
+      "id": "q109",
+      "query": "Where is read_expression implemented?",
+      "source_path": "packages/mypy/nativeparse.py"
+    },
+    {
+      "id": "q110",
+      "query": "Where is SchemeLexer implemented?",
+      "source_path": "packages/pygments/lexers/lisp.py"
+    },
+    {
+      "id": "q111",
+      "query": "Where is AbstractResolver implemented?",
+      "source_path": "cpython/site-packages/pip/_vendor/resolvelib/resolvers/abstract.py"
+    },
+    {
+      "id": "q112",
+      "query": "Where is HeaderParseError implemented?",
+      "source_path": "cpython/email/errors.py"
+    },
+    {
+      "id": "q113",
+      "query": "Where is attrgetter implemented?",
+      "source_path": "cpython/operator.py"
+    },
+    {
+      "id": "q114",
+      "query": "Where is SolarizedLightStyle implemented?",
+      "source_path": "packages/pygments/styles/solarized.py"
+    },
+    {
+      "id": "q115",
+      "query": "Where is NullTranslations implemented?",
+      "source_path": "cpython/gettext.py"
+    },
+    {
+      "id": "q116",
+      "query": "Where is SCC implemented?",
+      "source_path": "packages/mypy/build.py"
+    },
+    {
+      "id": "q117",
+      "query": "Where is find_module_with_reason implemented?",
+      "source_path": "packages/mypy/build.py"
+    },
+    {
+      "id": "q118",
+      "query": "Where is resolve_driver_info implemented?",
+      "source_path": "packages/redis/driver_info.py"
+    },
+    {
+      "id": "q119",
+      "query": "Where is _EmptyCollector implemented?",
+      "source_path": "packages/prometheus_client/registry.py"
+    },
+    {
+      "id": "q120",
+      "query": "Where is has_metaclass implemented?",
+      "source_path": "cpython/lib2to3/fixes/fix_metaclass.py"
+    },
+    {
+      "id": "q121",
+      "query": "Where is yin implemented?",
+      "source_path": "cpython/turtledemo/yinyang.py"
+    },
+    {
+      "id": "q122",
+      "query": "Where is IDLE implemented?",
+      "source_path": "packages/h11/_state.py"
+    },
+    {
+      "id": "q123",
+      "query": "Where is resolve_data_residency implemented?",
+      "source_path": "packages/openai/_data_residency.py"
+    },
+    {
+      "id": "q124",
+      "query": "Where is available_timezones implemented?",
+      "source_path": "cpython/zoneinfo/_tzpath.py"
+    },
+    {
+      "id": "q125",
+      "query": "Where is LatexEmbeddedLexer implemented?",
+      "source_path": "packages/pygments/formatters/latex.py"
+    },
+    {
+      "id": "q126",
+      "query": "Where is find_attr_initializers implemented?",
+      "source_path": "packages/mypyc/irbuild/classdef.py"
+    },
+    {
+      "id": "q127",
+      "query": "Where is GoLexer implemented?",
+      "source_path": "packages/pygments/lexers/go.py"
+    },
+    {
+      "id": "q128",
+      "query": "Where is WorkloadIdentityProviderMappingUpdated implemented?",
+      "source_path": "packages/openai/types/admin/organization/audit_log_list_response.py"
+    },
+    {
+      "id": "q129",
+      "query": "Where is find_module_by_fullname implemented?",
+      "source_path": "packages/mypy/inspections.py"
+    },
+    {
+      "id": "q130",
+      "query": "Where is TimeFromTicks implemented?",
+      "source_path": "cpython/sqlite3/dbapi2.py"
+    },
+    {
+      "id": "q131",
+      "query": "Where is reset implemented?",
+      "source_path": "cpython/cgitb.py"
+    },
+    {
+      "id": "q132",
+      "query": "Where is SearchScope implemented?",
+      "source_path": "cpython/site-packages/pip/_internal/models/search_scope.py"
+    },
+    {
+      "id": "q133",
+      "query": "Where is FixDict implemented?",
+      "source_path": "cpython/lib2to3/fixes/fix_dict.py"
+    },
+    {
+      "id": "q134",
+      "query": "Where is DotAtomText implemented?",
+      "source_path": "cpython/email/_header_value_parser.py"
+    },
+    {
+      "id": "q135",
+      "query": "Where is get_path_with_query_string implemented?",
+      "source_path": "packages/uvicorn/protocols/utils.py"
+    },
+    {
+      "id": "q136",
+      "query": "Where is _verify_abstract_status implemented?",
+      "source_path": "packages/mypy/stubtest.py"
+    },
+    {
+      "id": "q137",
+      "query": "Where is ContentProvenanceCheck implemented?",
+      "source_path": "packages/openai/types/content_provenance_check.py"
+    },
+    {
+      "id": "q138",
+      "query": "Where is ForkAwareLocal implemented?",
+      "source_path": "cpython/multiprocessing/util.py"
+    },
+    {
+      "id": "q139",
+      "query": "Where is register_function implemented?",
+      "source_path": "packages/mypy/plugins/singledispatch.py"
+    },
+    {
+      "id": "q140",
+      "query": "Where is SessionForkResponse implemented?",
+      "source_path": "packages/openai/types/live/session_fork_response.py"
+    },
+    {
+      "id": "q141",
+      "query": "Where is HTTPAdapter implemented?",
+      "source_path": "cpython/site-packages/pip/_internal/network/session.py"
+    },
+    {
+      "id": "q142",
+      "query": "Where is do_help implemented?",
+      "source_path": "packages/mypy/dmypy/client.py"
+    },
+    {
+      "id": "q143",
+      "query": "Where is highest_version implemented?",
+      "source_path": "cpython/site-packages/pip/_internal/commands/search.py"
+    },
+    {
+      "id": "q144",
+      "query": "Where is ResponseAudioWsDelta implemented?",
+      "source_path": "packages/openai/types/responses/responses_server_event.py"
+    },
+    {
+      "id": "q145",
+      "query": "Where is is_verbose implemented?",
+      "source_path": "packages/mypy/server/update.py"
+    },
+    {
+      "id": "q146",
+      "query": "Where is ispunct implemented?",
+      "source_path": "cpython/curses/ascii.py"
+    },
+    {
+      "id": "q147",
+      "query": "Where is PersistedAgentToolConfigParamToolSearch implemented?",
+      "source_path": "packages/openai/types/beta/persisted_agent_tool_param.py"
+    },
+    {
+      "id": "q148",
+      "query": "Where is validate_spec implemented?",
+      "source_path": "packages/openapi_spec_validator/shortcuts.py"
+    },
+    {
+      "id": "q149",
+      "query": "Where is FunctionToolCallArgumentsDoneEvent implemented?",
+      "source_path": "packages/openai/lib/streaming/chat/_events.py"
+    },
+    {
+      "id": "q150",
+      "query": "Where is is_trait_decorator implemented?",
+      "source_path": "packages/mypyc/irbuild/util.py"
+    },
+    {
+      "id": "q151",
+      "query": "Where is RequirementParseError implemented?",
+      "source_path": "cpython/site-packages/pip/_vendor/pkg_resources/__init__.py"
+    },
+    {
+      "id": "q152",
+      "query": "Where is null_ns_handler implemented?",
+      "source_path": "cpython/site-packages/pip/_vendor/pkg_resources/__init__.py"
+    },
+    {
+      "id": "q153",
+      "query": "Where is _WindowsConsoleReader implemented?",
+      "source_path": "packages/click/_winconsole.py"
+    },
+    {
+      "id": "q154",
+      "query": "Where is PermissionListParams implemented?",
+      "source_path": "packages/openai/types/fine_tuning/checkpoints/permission_list_params.py"
+    },
+    {
+      "id": "q155",
+      "query": "Where is _load_binary implemented?",
+      "source_path": "packages/psycopg/types/array.py"
+    },
+    {
+      "id": "q156",
+      "query": "Where is _load_sub implemented?",
+      "source_path": "packages/psycopg/_copy_base.py"
+    },
+    {
+      "id": "q157",
+      "query": "Where is TranscriptionSessionUpdate implemented?",
+      "source_path": "packages/openai/types/beta/realtime/transcription_session_update.py"
+    },
+    {
+      "id": "q158",
+      "query": "Where is SessionUsageUpdatedEvent implemented?",
+      "source_path": "packages/openai/types/live/session_usage_updated_event.py"
+    },
+    {
+      "id": "q159",
+      "query": "Where is _paramspec_prepare_subst implemented?",
+      "source_path": "cpython/typing.py"
+    },
+    {
+      "id": "q160",
+      "query": "Where is UnboundType implemented?",
+      "source_path": "packages/mypy/types.py"
+    },
+    {
+      "id": "q161",
+      "query": "Where is _csv_open implemented?",
+      "source_path": "cpython/site-packages/pip/_vendor/distlib/util.py"
+    },
+    {
+      "id": "q162",
+      "query": "Where is set_line_column_range implemented?",
+      "source_path": "packages/mypy/nativeparse.py"
+    },
+    {
+      "id": "q163",
+      "query": "Where is pattern_str_validator implemented?",
+      "source_path": "packages/pydantic/_internal/_validators.py"
+    },
+    {
+      "id": "q164",
+      "query": "Where is record_property implemented?",
+      "source_path": "packages/_pytest/junitxml.py"
+    },
+    {
+      "id": "q165",
+      "query": "Where is InputAudioBufferClearedEvent implemented?",
+      "source_path": "packages/openai/types/beta/realtime/input_audio_buffer_cleared_event.py"
+    },
+    {
+      "id": "q166",
+      "query": "Where is MagicMock implemented?",
+      "source_path": "cpython/unittest/mock.py"
+    },
+    {
+      "id": "q167",
+      "query": "Where is generate_annotated_html implemented?",
+      "source_path": "packages/mypyc/annotate.py"
+    },
+    {
+      "id": "q168",
+      "query": "Where is Printer implemented?",
+      "source_path": "cpython-tools/c-analyzer/c_common/logging.py"
+    },
+    {
+      "id": "q169",
+      "query": "Where is gather_all_validators implemented?",
+      "source_path": "packages/pydantic/v1/class_validators.py"
+    },
+    {
+      "id": "q170",
+      "query": "Where is read_decimalnl_long implemented?",
+      "source_path": "cpython/pickletools.py"
+    },
+    {
+      "id": "q171",
+      "query": "Where is BoolBinaryDumper implemented?",
+      "source_path": "packages/psycopg/types/bool.py"
+    },
+    {
+      "id": "q172",
+      "query": "Where is quiet_subprocess_runner implemented?",
+      "source_path": "cpython/site-packages/pip/_vendor/pyproject_hooks/_impl.py"
+    },
+    {
+      "id": "q173",
+      "query": "Where is check_exc_info implemented?",
+      "source_path": "cpython/wsgiref/validate.py"
+    },
+    {
+      "id": "q174",
+      "query": "Where is parse_test_data implemented?",
+      "source_path": "packages/mypy/test/data.py"
+    },
+    {
+      "id": "q175",
+      "query": "Where is read_str implemented?",
+      "source_path": "packages/mypy/cache.py"
+    },
+    {
+      "id": "q176",
+      "query": "Where is _fix_write_default implemented?",
+      "source_path": "cpython-tools/c-analyzer/c_common/tables.py"
+    },
+    {
+      "id": "q177",
+      "query": "Where is _coerce_version implemented?",
+      "source_path": "cpython/site-packages/pip/_vendor/packaging/specifiers.py"
+    },
+    {
+      "id": "q178",
+      "query": "Where is parse_mypy_args implemented?",
+      "source_path": "packages/mypy/test/testpep561.py"
+    },
+    {
+      "id": "q179",
+      "query": "Where is LookAround implemented?",
+      "source_path": "packages/regex/_regex_core.py"
+    },
+    {
+      "id": "q180",
+      "query": "Where is GraderInputItemInputImage implemented?",
+      "source_path": "packages/openai/types/graders/grader_inputs.py"
+    },
+    {
+      "id": "q181",
+      "query": "Where is ColorParseError implemented?",
+      "source_path": "cpython/site-packages/pip/_vendor/rich/color.py"
+    },
+    {
+      "id": "q182",
+      "query": "Where is PlainRepr implemented?",
+      "source_path": "packages/pydantic/_internal/_repr.py"
+    },
+    {
+      "id": "q183",
+      "query": "Where is BoundaryVersion implemented?",
+      "source_path": "packages/packaging/_ranges.py"
+    },
+    {
+      "id": "q184",
+      "query": "Where is is_final_node implemented?",
+      "source_path": "packages/mypy/nodes.py"
+    },
+    {
+      "id": "q185",
+      "query": "Where is path_to_url implemented?",
+      "source_path": "cpython/site-packages/pip/_internal/utils/urls.py"
+    },
+    {
+      "id": "q186",
+      "query": "Where is LoadLiteral implemented?",
+      "source_path": "packages/mypyc/ir/ops.py"
+    },
+    {
+      "id": "q187",
+      "query": "Where is Marshaller implemented?",
+      "source_path": "cpython/xmlrpc/client.py"
+    },
+    {
+      "id": "q188",
+      "query": "Where is GradersWithRawResponse implemented?",
+      "source_path": "packages/openai/resources/fine_tuning/alpha/graders.py"
+    },
+    {
+      "id": "q189",
+      "query": "Where is _AsyncGeneratorContextManager implemented?",
+      "source_path": "cpython/contextlib.py"
+    },
+    {
+      "id": "q190",
+      "query": "Where is PythonUL4Lexer implemented?",
+      "source_path": "packages/pygments/lexers/ul4.py"
+    },
+    {
+      "id": "q191",
+      "query": "Where is Screenshot implemented?",
+      "source_path": "packages/openai/types/beta/beta_computer_action.py"
+    },
+    {
+      "id": "q192",
+      "query": "Where is OutputVoiceID implemented?",
+      "source_path": "packages/openai/types/realtime/realtime_response_create_audio_output.py"
+    },
+    {
+      "id": "q193",
+      "query": "Where is TriggeredDataChangeViolation implemented?",
+      "source_path": "packages/psycopg/errors.py"
+    },
+    {
+      "id": "q194",
+      "query": "Where is CompactionTriggerAgent implemented?",
+      "source_path": "packages/openai/types/beta/beta_response_input_item.py"
+    },
+    {
+      "id": "q195",
+      "query": "Where is _is_instance_mock implemented?",
+      "source_path": "cpython/unittest/mock.py"
+    },
+    {
+      "id": "q196",
+      "query": "Where is MaqlLexer implemented?",
+      "source_path": "packages/pygments/lexers/business.py"
+    },
+    {
+      "id": "q197",
+      "query": "Where is has_placeholder implemented?",
+      "source_path": "packages/mypy/semanal_shared.py"
+    },
+    {
+      "id": "q198",
+      "query": "Where is LockAdapter implemented?",
+      "source_path": "packages/anyio/_core/_synchronization.py"
+    },
+    {
+      "id": "q199",
+      "query": "Where is _ClassBuilder implemented?",
+      "source_path": "packages/attr/_make.py"
+    },
+    {
+      "id": "q200",
+      "query": "Where is bitmap_name implemented?",
+      "source_path": "packages/mypyc/common.py"
+    }
+  ]
+}
