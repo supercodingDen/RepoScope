@@ -1,0 +1,91 @@
+name: release
+on:
+  workflow_run:
+    workflows: [quality]
+    types: [completed]
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == 'release/v0.1.0' &&
+          github.event.workflow_run.head_repository.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          path: release-source
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          version: "0.12.11"
+      - name: Verify immutable source and absence of an existing release
+        working-directory: release-source
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/release/v0.1.0" --jq '.object.sha')" = "$SOURCE_SHA"
+          if gh release view v0.1.0 >/dev/null 2>&1; then
+            echo 'v0.1.0 already exists; refusing to replace it' >&2
+            exit 1
+          fi
+          test -z "$(gh api "repos/$GITHUB_REPOSITORY/git/matching-refs/tags/v0.1.0" --jq '.[].ref')"
+      - name: Verify the demo from a fresh checkout
+        working-directory: release-source
+        run: |
+          set -euo pipefail
+          uv sync --frozen --all-groups
+          uv run --frozen python -m scripts.verify_demo
+      - name: Build exact-source release images
+        working-directory: release-source
+        run: |
+          set -euo pipefail
+          docker build --target runtime -t reposcope:v0.1.0 .
+          docker build -f Dockerfile.postgres -t reposcope-postgres:v0.1.0 .
+          docker build -f Dockerfile.nats -t reposcope-nats:v0.1.0 .
+          mkdir -p dist
+          docker save reposcope:v0.1.0 reposcope-postgres:v0.1.0 reposcope-nats:v0.1.0 | gzip -n > dist/reposcope-v0.1.0-images.tar.gz
+      - name: Install checksum-verified SBOM generator
+        working-directory: release-source
+        run: |
+          set -euo pipefail
+          curl -fsSLo trivy.tar.gz https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.74.0_Linux-64bit.tar.gz
+          echo '2ae6fe3ee734b7fdf11335663e18c75ea12dccc76062f09f164a3b0f8be4371a  trivy.tar.gz' | sha256sum --check
+          tar -xzf trivy.tar.gz trivy
+      - name: Produce SBOMs and immutable build metadata
+        working-directory: release-source
+        run: |
+          set -euo pipefail
+          ./trivy image --format cyclonedx --output dist/reposcope-v0.1.0-sbom.cdx.json reposcope:v0.1.0
+          ./trivy image --format cyclonedx --output dist/reposcope-postgres-v0.1.0-sbom.cdx.json reposcope-postgres:v0.1.0
+          ./trivy image --format cyclonedx --output dist/reposcope-nats-v0.1.0-sbom.cdx.json reposcope-nats:v0.1.0
+          jq -n \
+            --arg version v0.1.0 \
+            --arg source_sha "$SOURCE_SHA" \
+            --arg source_tree "$(git rev-parse HEAD^{tree})" \
+            --arg lock_sha256 "$(sha256sum uv.lock | cut -d' ' -f1)" \
+            --arg archive_sha256 "$(sha256sum dist/reposcope-v0.1.0-images.tar.gz | cut -d' ' -f1)" \
+            --arg runtime_image_id "$(docker image inspect --format '{{.Id}}' reposcope:v0.1.0)" \
+            --arg postgres_image_id "$(docker image inspect --format '{{.Id}}' reposcope-postgres:v0.1.0)" \
+            --arg nats_image_id "$(docker image inspect --format '{{.Id}}' reposcope-nats:v0.1.0)" \
+            '{schema_version: 1, version: $version, source_commit: $source_sha, source_tree: $source_tree, uv_lock_sha256: $lock_sha256, image_archive_sha256: $archive_sha256, image_ids: {runtime: $runtime_image_id, postgres: $postgres_image_id, nats: $nats_image_id}}' \
+            > dist/release-metadata.json
+          (cd dist && sha256sum release-metadata.json reposcope-v0.1.0-images.tar.gz *-sbom.cdx.json > SHA256SUMS && sha256sum --check SHA256SUMS)
+      - name: Create version tag and pre-release
+        working-directory: release-source
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/release/v0.1.0" --jq '.object.sha')" = "$SOURCE_SHA"
+          gh release create v0.1.0 dist/* --target "$SOURCE_SHA" --title 'RepoScope v0.1.0 pre-release' --notes-file docs/releases/v0.1.0.md --prerelease
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v0.1.0" --jq '.object.sha')" = "$SOURCE_SHA"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/v0.1.0" --jq '.tag_name')" = v0.1.0

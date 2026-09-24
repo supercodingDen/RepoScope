@@ -1,0 +1,34 @@
+name: Bug report
+description: Report reproducible behavior in RepoScope.
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Do not include credentials, private source, or vulnerability details. Follow SECURITY.md for sensitive reports."
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Use a release tag or full commit SHA.
+      placeholder: v0.1.0 or a commit SHA
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the smallest public or synthetic example and exact commands.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment and safe logs
+      description: OS, Docker/Python versions, and redacted error codes only.

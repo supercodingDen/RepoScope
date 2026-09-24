@@ -1,7 +1,15 @@
 # Project status
 
-Milestone: **T13 English documentation and reproducible small demo delivered locally; T12 performance acceptance remains open**.
+Milestone: **T14 release candidate prepared locally; remote publication and public visibility still require verification. T12 performance acceptance remains open**.
 Verification date: 2026-09-24 UTC. Working project: `D:\RepoScope_project\reposcope`.
+
+## T14 release candidate
+
+- Added the [release procedure](t14-release.md), v0.1.0 pre-release notes, changelog, issue/PR templates, weekly Dependabot updates, and a branch-gated release workflow. The workflow waits for successful remote `quality` checks, re-runs the mock-only demo from the exact release commit on fresh disposable Compose volumes, and produces three image SBOMs, an image archive, build metadata, and checksums before making a version tag/release. Its actual remote behavior has not yet been verified at this status snapshot.
+- The connected GitHub integration provides Git data writes and CI/release reads, but no repository visibility, branch-protection administration, or direct release-creation operation. The repository's existing ruleset collection was empty and the branch-protection read returned a permission error. The release workflow requests `contents: write` only in its guarded publication job. Owner-side visibility and protected-branch settings remain open; private release preparation is not the public T14 gate.
+- Local verification: 369 offline tests passed and 80 opt-in tests skipped; strict mypy passed 128 files; Ruff lint and formatting passed; 48 contracts and 20 schema/example pairs plus two OpenAPI documents passed; 56 Markdown files had no broken local links; the release YAML structure parsed; redacted Gitleaks scanned 282 allowlisted source/configuration files (1.43 MB) and found no leaks. The local `.env` was not read or included in the scan.
+
+The next remote checks must confirm the actual main and release-branch commit SHAs, four `quality` job conclusions, the release job's fresh demo and six assets, the tag target, and anonymous access after public visibility is enabled. GitHub settings for required checks/review, private vulnerability reporting, and repository visibility need owner action where the account plan permits them. T15 hosting and open T12 performance/quality gates are unaffected.
 
 ## T13 delivery and verification
 

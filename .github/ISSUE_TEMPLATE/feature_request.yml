@@ -1,0 +1,23 @@
+name: Feature request
+description: Propose a bounded improvement with a concrete use case.
+title: "[Feature] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and user outcome
+      description: Describe what a user cannot do today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Include scope, limits, and an observable success condition.
+    validations:
+      required: true
+  - type: textarea
+    id: tradeoffs
+    attributes:
+      label: Alternatives or trade-offs

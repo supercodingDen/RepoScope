@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security reporting policy
+    url: https://github.com/supercodingDen/RepoScope/blob/main/SECURITY.md
+    about: Ask for a private reporting channel; do not post vulnerability details in an issue.
