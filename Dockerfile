@@ -9,11 +9,13 @@ RUN apt-get update \
     && chown 10001:10001 /var/lib/reposcope/sources
 
 FROM source-tools AS dependencies
-ENV UV_LINK_MODE=copy UV_COMPILE_BYTECODE=1 UV_PYTHON_DOWNLOADS=never
+ENV UV_LINK_MODE=copy UV_COMPILE_BYTECODE=1 UV_PYTHON_DOWNLOADS=never TIKTOKEN_CACHE_DIR=/app/tiktoken-cache
 WORKDIR /app
 RUN pip install --no-cache-dir uv==0.12.11
 COPY pyproject.toml uv.lock .python-version ./
 RUN uv sync --frozen --no-dev --python /usr/local/bin/python
+RUN mkdir -p /app/tiktoken-cache \
+    && /app/.venv/bin/python -c "import tiktoken; tiktoken.get_encoding('cl100k_base')"
 
 FROM dependencies AS test
 RUN uv sync --frozen --all-groups --python /usr/local/bin/python
@@ -28,10 +30,11 @@ CMD ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider"]
 FROM source-tools AS runtime
 WORKDIR /app
 COPY --from=dependencies /app/.venv /app/.venv
+COPY --from=dependencies /app/tiktoken-cache /app/tiktoken-cache
 COPY scripts/import_local_source.py ./scripts/import_local_source.py
 COPY contracts ./contracts
 COPY src ./src
-ENV PATH="/app/.venv/bin:$PATH" PYTHONPATH="/app/src:/app" PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 HOME=/tmp
+ENV PATH="/app/.venv/bin:$PATH" PYTHONPATH="/app/src:/app" PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 HOME=/tmp TIKTOKEN_CACHE_DIR=/app/tiktoken-cache
 USER 10001:10001
 EXPOSE 8000 9000
 CMD ["python", "-m", "reposcope", "api"]

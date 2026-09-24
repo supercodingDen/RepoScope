@@ -75,6 +75,7 @@ def role_status(base: list[str], environment: dict[str, str], role: str) -> int:
         " r=urllib.request.urlopen('http://127.0.0.1:9000/readyz',timeout=4)\n"
         " print(r.status); r.close()\n"
         "except urllib.error.HTTPError as e: print(e.code)\n"
+        "except (urllib.error.URLError, TimeoutError, OSError): print(0)\n"
     )
     result = command([*base, "exec", "-T", role, "python", "-c", code], environment, 15)
     return int(result.strip())

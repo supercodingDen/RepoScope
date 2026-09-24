@@ -124,9 +124,9 @@ Actual public sample: `https://github.com/pallets/itsdangerous`, commit `672971d
 
 Native checks used isolated temporary localhost databases/brokers and the verified portable Git binary. The Windows pgvector binary is the previously documented unofficial0.8.6_17 release; this does not validate the Linux image. Temporary servers were stopped afterward; no system service was installed.
 
-## Open container acceptance
+## Local container acceptance
 
-Docker and a usable WSL backend are unavailable. The prior T02 Linux image build, full Compose role/network/dependency-outage smoke, container shutdown and persistent-volume acceptance remain **unexecuted**. Native success and Linux-target typing do not close this gate. Container Git differs from the tested Windows MinGit. Once a Docker environment is available, run `uv run --frozen python scripts/smoke_test.py`; it uses isolated temporary credentials and does not read the developer dotenv file.
+On 2026-09-24, Docker Desktop 29.8.0 with Compose v5.5.1 built and started the Linux images. The isolated `scripts/smoke_test.py` run passed migration, all three roles, 74 container integration tests (with three optional cases skipped), authenticated business API, PostgreSQL/Redis/NATS loss and recovery, network isolation, and graceful shutdown. It used temporary credentials and removed only its own volumes. The development stack remains healthy at `http://127.0.0.1:8000`; its named PostgreSQL and JetStream volumes were preserved during the rebuild. A separate stop/start data-retention check and hosted deployment remain open.
 
 Disk limits are enforced by monitoring and finalization checks, with possible transient physical overshoot. Download accounting bounds application-forwarded TLS transport payload; kernel receive buffers are outside that quota. Local imports require a trusted quiescent operator root. These are bounded source controls, not an absolute hostile-host isolation claim.
 

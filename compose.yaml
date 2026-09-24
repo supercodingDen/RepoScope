@@ -109,6 +109,7 @@ services:
   api:
     <<: *runtime
     command: ["python", "-m", "reposcope", "api"]
+    networks: [backend, api-ingress]
     ports: ["127.0.0.1:${API_PORT:-8000}:8000"]
     environment:
       <<: *runtime-environment
@@ -171,6 +172,7 @@ services:
 networks:
   backend:
     internal: true
+  api-ingress: {}
   source-egress: {}
 
 volumes:

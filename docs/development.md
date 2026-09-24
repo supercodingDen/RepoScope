@@ -21,7 +21,7 @@ If uv is not on PATH but the environment exists, use `.venv\Scripts\python.exe -
 ## Start the development stack
 
 1. Copy `.env.example` to `.env` yourself. Set `POSTGRES_PASSWORD` and `APP_DATABASE_PASSWORD` to distinct random values of at least 32 hexadecimal characters. Hex values avoid URL-escaping ambiguity. Set `REPOSCOPE_API_TOKEN` to a separate random token to enable business access. Keep these private.
-2. Keep providers mocked. Compose fixes `PROVIDER_MODE=mock` and `ALLOW_PAID_API_CALLS=false`. T03 accepts persistent work; no provider calls or business consumers run yet.
+2. Keep providers mocked. Compose defaults to `PROVIDER_MODE=mock` and `ALLOW_PAID_API_CALLS=false`, so the API and workers can process requests without paid provider calls.
 3. Run:
 
 ```text
@@ -30,7 +30,7 @@ docker compose up --build --wait --wait-timeout 180
 
 The one-shot `migrate` service must succeed before application roles start. Check [liveness](http://127.0.0.1:8000/healthz) and [readiness](http://127.0.0.1:8000/readyz); both return HTTP 200 with `{"status":"ok"}` when ready.
 
-`API_PORT` changes the localhost port. PostgreSQL, Redis, NATS, worker health, and metrics have no published ports. Management port 9000 is private to the Compose network. Memory/CPU limits are defaults, not capacity claims. PostgreSQL and JetStream use persistent named volumes; Redis is disposable.
+`API_PORT` changes the localhost port. The API joins a dedicated ingress network to make its localhost port reachable; PostgreSQL, Redis, NATS, worker health, and metrics have no published ports. Management port 9000 is private to the Compose network. Memory/CPU limits are defaults, not capacity claims. PostgreSQL and JetStream use persistent named volumes; Redis is disposable. The image includes the `cl100k_base` tokenizer data so workers and offline container tests do not need to download it at runtime.
 
 Stop without deleting data:
 
