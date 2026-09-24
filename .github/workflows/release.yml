@@ -53,6 +53,8 @@ jobs:
           docker build --target runtime -t reposcope:v0.1.0 .
           docker build -f Dockerfile.postgres -t reposcope-postgres:v0.1.0 .
           docker build -f Dockerfile.nats -t reposcope-nats:v0.1.0 .
+          docker run --rm --entrypoint sh reposcope:v0.1.0 -c 'test -s /app/LICENSE && test -s /app/NOTICE && test -s /app/docs/third-party-notices.md'
+          docker run --rm --entrypoint sh reposcope-nats:v0.1.0 -c 'test -s /licenses/Apache-2.0.txt && test -s /licenses/NATS-NOTICE.txt'
           mkdir -p dist
           docker save reposcope:v0.1.0 reposcope-postgres:v0.1.0 reposcope-nats:v0.1.0 | gzip -n > dist/reposcope-v0.1.0-images.tar.gz
       - name: Install checksum-verified SBOM generator

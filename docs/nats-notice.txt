@@ -1,0 +1,8 @@
+NATS Server v2.14.7
+Copyright 2012-2026 The NATS Authors
+Licensed under the Apache License, Version 2.0.
+The complete license text is in /licenses/Apache-2.0.txt in the RepoScope
+NATS image. Source: https://github.com/nats-io/nats-server/tree/v2.14.7
+
+This notice identifies the NATS server. Other components in its Alpine-based
+image retain their own license material and are listed in the image SBOM.
