@@ -135,8 +135,9 @@ class BoundedGitProxy:
                 except TimeoutError:
                     continue
                 if len(self._threads) >= 512 or not self._active.acquire(blocking=False):
+                    self._fail("SOURCE_CONNECTION_LIMIT")
                     client.close()
-                    raise SourceRejected("SOURCE_CONNECTION_LIMIT")
+                    return
                 try:
                     self._track(client)
                 except BaseException:
