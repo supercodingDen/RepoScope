@@ -42,14 +42,14 @@ Do not remove persistent volumes unless intentionally resetting the database. Ch
 
 ## Process boundaries
 
-- `python -m reposcope api`: public T03 API and health/readiness on 8000 and management on 9000.
-- `python -m reposcope indexer`: idle worker lifecycle and management on 9000.
-- `python -m reposcope agent`: idle worker lifecycle and management on 9000.
+- `python -m reposcope api`: authenticated business API and health/readiness on 8000, private management on 9000.
+- `python -m reposcope indexer`: durable import worker and private management on 9000.
+- `python -m reposcope agent`: durable read-only run worker and private management on 9000.
 - `python -m reposcope.infrastructure.db.migrate`: one-shot DDL owner.
 
 For local processes, set `PYTHONPATH` to `src;.` on Windows (`src:.` on Linux), and supply environment variables explicitly. Application code never loads dotenv files. Compose supplies container connection settings; container dependency addresses are not exposed as localhost services.
 
-Readiness checks PostgreSQL and the required `0002_core` migration, Redis PING, and JetStream account information with deadlines. It never calls a model. Liveness indicates a responsive process. Dependency failure returns HTTP 503 using the canonical Problem shape and a safe request ID. Workers have no acknowledgment path until T04.
+Readiness checks PostgreSQL and the current migration ledger, Redis PING, and JetStream account information with deadlines. It never calls a model. Liveness indicates a responsive process. Dependency failure returns HTTP 503 using the canonical Problem shape and a safe request ID. Workers acknowledge durable deliveries only after the business completion transaction.
 
 The migration runner owns `src/reposcope/infrastructure/db/migrations`. It creates the vector extension and application schema, records checksums, and grants runtime DML without schema creation. T03 adds the business tables in `0002_core`; see [T03 API](t03-api.md). Runtime roles can read the ledger but cannot modify it. Never edit a migration already applied to a retained database.
 

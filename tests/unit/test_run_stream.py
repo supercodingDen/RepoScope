@@ -2,14 +2,42 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import pytest
 from starlette.requests import ClientDisconnect
 
+from contracts.models import Citation, CompletedData, RunResult
+from reposcope.adapters.postgres_run_events import decode_db_run_event
 from reposcope.application.run_stream import RunStream
 from reposcope.ports.run_events import EventBatch
 from reposcope.transport.http.app import _RunStreamingResponse
+
+
+def test_persisted_completed_event_decodes_citation_uuids() -> None:
+    run_id, repository_id, generation_id, chunk_id = (uuid4() for _ in range(4))
+    citation = Citation(
+        chunk_id=chunk_id,
+        repository_id=repository_id,
+        generation_id=generation_id,
+        commit_sha="a" * 40,
+        path="src/answer.py",
+        start_line=1,
+        end_line=2,
+    )
+    data = CompletedData(
+        result=RunResult(
+            answer="The answer is cited.",
+            citations=[citation],
+            evidence_status="supported",
+            model="mock",
+            estimated_cost_usd="0.000000",
+        )
+    )
+    decoded = decode_db_run_event(run_id, 1, datetime.now(UTC), data.model_dump_json())
+    assert isinstance(decoded.data, CompletedData)
+    assert decoded.data.result.citations == [citation]
 
 
 class EmptyStore:

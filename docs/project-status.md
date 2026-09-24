@@ -1,7 +1,28 @@
 # Project status
 
-Milestone: **T12 scale benchmark and retrieval tuning implemented locally; performance acceptance remains open**.
+Milestone: **T13 English documentation and reproducible small demo delivered locally; T12 performance acceptance remains open**.
 Verification date: 2026-09-24 UTC. Working project: `D:\RepoScope_project\reposcope`.
+
+## T13 delivery and verification
+
+- README now covers the actual Python architecture, job lifecycle, public API, source/schema boundaries, retrieval, backpressure, benchmarks, faults, observability, development, roadmap, security, and license. The [demo](demo.md), [configuration](configuration.md), [failure recovery](failure-modes.md), [deployment prerequisites](deployment.md), and [interview guide](interview-guide.md) distinguish the mock local stack from future public release and hosting.
+- Apache-2.0 text is in `LICENSE`; `NOTICE`, [third-party dependency/provenance notes](third-party-notices.md), `CODE_OF_CONDUCT.md`, and `SECURITY.md` are present. The runtime image includes the project's license and notices; an image-file check verified their paths. A release-time audit of complete runtime/image notices is still required. The benchmark source archives and vectors remain outside the repository.
+- The CLI now accepts `--ref` and the demo pins the small ItsDangerous repository to the previously recorded commit. Two isolated verifications built mock-only Compose stacks on empty disposable volumes, imported that pinned source, completed agent runs, replayed SSE, and verified citations to the pinned commit. The second ran from a clean reviewed source copy after a frozen dependency install, without the owner's local `.env` or old virtual environment. Both cleaned up their own containers and volumes. First-time downloads/build time is explicitly excluded from a five-minute walkthrough promise.
+- That real demo exposed an event replay defect: strict Python-mode validation rejected UUID strings nested in persisted citation JSON. The database adapter now validates that stored JSON in JSON mode. A focused test reproduces the cited-completion case; an integration test also carries citations through terminal event replay.
+
+| T13 local check | Executed result |
+| --- | --- |
+| Full offline pytest | 369 passed, 80 opt-in skipped |
+| Strict mypy and Ruff | Passed; 128 Python files type-checked and 181 formatted |
+| Contract exports and validation | 48 exports current; 20 schema/example pairs and 2 OpenAPI documents valid |
+| Fresh disposable demo | Passed twice, including from a clean source copy and new frozen environment; temporary volumes removed |
+| Isolated Docker/Compose smoke | Passed startup, migration, business API, dependency outages/recovery, isolation, and shutdown; two final passes after the license image change |
+| Markdown local links | 51 Markdown files checked, 0 broken local links |
+| Source-only Gitleaks | 273 reviewed files, 1.42 MB scanned; no leaks found |
+
+The local `.env` file exists but its contents were not inspected. The owner must confirm local secret values privately. The GitHub repository is still private; T14 public visibility/release and T15 host, HTTPS, domain, and backups are not configured. See [operator configuration](configuration.md). T12's 100-ms search p95, 30-ms non-search p95, semantic-quality, live-provider, and 100K single-job gates remain open.
+
+One intermediate Docker smoke invocation returned a generic Docker command failure while building/starting the disposable stack; its runner intentionally suppresses potentially sensitive command output. A stage-traced repetition and a second unmodified repetition both passed. The transient cause was not established, so these later passes do not prove startup is free of intermittent failures.
 
 ## T12 delivery and verification
 
@@ -167,6 +188,6 @@ Disk limits are enforced by monitoring and finalization checks, with possible tr
 
 ## Next milestone
 
-T13: final English documentation, license and notices. The open T12 search-latency, non-search HTTP, semantic-quality, live-provider and single-job ingestion gates remain tracked; they must not be described as passed in T13 or the final handover. Hosted HTTPS access and backup/restore remain T15. The original overall job deadline still applies to source acquisition and indexing.
+T14: reviewed public GitHub release and versioned artifacts, after owner approval of repository visibility and release settings. The open T12 search-latency, non-search HTTP, semantic-quality, live-provider and single-job ingestion gates remain tracked; they must not be described as passed at final handover. Hosted HTTPS access and backup/restore remain T15. The original overall job deadline still applies to source acquisition and indexing.
 
-The reviewed source is synchronized to the owner's private GitHub repository, `supercodingDen/RepoScope`, after each complete task. The D-drive extraction has no persistent local Git history; synchronization uses the connected GitHub integration. Public release, PR, hosted deployment and system installation were not performed. Remote CI results have not been verified. Earlier T03 evidence remains in `docs/verification/t03-checks.txt`, `t03-native-checks.txt` and the T03 API guide.
+The reviewed source is synchronized to the owner's private GitHub repository, `supercodingDen/RepoScope`, after each complete task. The D-drive extraction has no persistent local Git history; synchronization uses the connected GitHub integration. Public release, PR, hosted deployment and system installation were not performed. T12 remote CI passed on its synced commit; T13 remote CI must be checked on its new commit. Earlier T03 evidence remains in `docs/verification/t03-checks.txt`, `t03-native-checks.txt` and the T03 API guide.

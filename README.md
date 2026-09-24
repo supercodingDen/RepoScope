@@ -1,56 +1,57 @@
 # RepoScope
 
-Event-driven code intelligence with source-grounded answers and bounded agent costs.
+RepoScope indexes a public GitHub repository at a pinned commit, lets you search its code, and answers questions with file and line citations. It is a single-host, event-driven demonstration of durable jobs and bounded, read-only agent work. The default providers are deterministic mocks, so a local demo requires no model account and makes no paid calls. Mock answers do not establish semantic answer quality.
 
-**Current milestone: T12 — scale benchmark and retrieval tuning.** T02–T11 delivered the runtime, ingestion, retrieval, agent, operations, and security boundary. T12 measured 100,029 real source chunks and 200 fixed queries, then added a published-generation count and a tuned HNSW index. Recall and database vector latency meet their local benchmark targets; 32-client end-to-end search p95 remains above 100 ms. See [T12 performance evidence](docs/t12-performance.md) and [project status](docs/project-status.md) for the measured limits.
+**Current milestone: T13 — documentation and reproducibility.** The source is synchronized to the owner's [private GitHub repository](https://github.com/supercodingDen/RepoScope). Public release and hosted HTTPS deployment are later tasks. The T12 scale study measured 100,029 real source chunks, but its 32-client search p95 target remains open. Read the [current status](docs/project-status.md) before treating a benchmark target as passed.
 
-## Start
+## Five-minute local path
 
-Prerequisites: Docker with Compose, Python 3.12.14 and uv 0.12.11. Open the repository directory in VS Code.
+Use Docker with Compose, Python 3.12.14, and uv 0.12.11. The first run downloads/builds images, Python packages, and tokenizer data, so allow more than five minutes on a cold machine. The small demo is separate from the 100K-chunk benchmark.
 
-```text
-uv sync --frozen --all-groups
+1. Run `uv sync --frozen --all-groups` in the repository directory.
+2. Copy `.env.example` to `.env` locally. Set **different**, randomly generated hexadecimal values of at least 32 characters for `POSTGRES_PASSWORD`, `APP_DATABASE_PASSWORD`, and `REPOSCOPE_API_TOKEN`. Keep `PROVIDER_MODE=mock` and `ALLOW_PAID_API_CALLS=false`. Never commit or send `.env`.
+3. Run `docker compose up --build --wait --wait-timeout 180` and check [health](http://127.0.0.1:8000/healthz) and [readiness](http://127.0.0.1:8000/readyz).
+4. Set `REPOSCOPE_API_TOKEN` in the terminal running the CLI to the same token configured locally, then follow the pinned [five-minute demo](docs/demo.md). It imports a small public repository, streams progress, and prints a cited result.
+
+The `migrate` container runs once before the three application roles start. The API binds only to `127.0.0.1`; PostgreSQL, Redis, NATS, management ports, and metrics have no host port. `docker compose down` stops the stack and retains named volumes. See [development](docs/development.md) for Windows setup, upgrades, and troubleshooting, and [configuration](docs/configuration.md) for operator choices.
+
+## Architecture and lifecycle
+
+```mermaid
+flowchart LR
+    Client[CLI or authenticated client] --> API[FastAPI API]
+    API --> DB[(PostgreSQL + pgvector)]
+    API --> Redis[(Redis admission/cache)]
+    API --> Outbox[Transactional outbox]
+    Outbox --> NATS[(NATS JetStream)]
+    NATS --> Indexer[Indexer worker]
+    NATS --> Agent[Agent worker]
+    Indexer --> DB
+    Agent --> DB
+    Indexer --> GitHub[Public GitHub source]
+    API --> Retrieval[Shared hybrid retrieval]
+    Agent --> Retrieval
+    Retrieval --> DB
 ```
 
-Copy `.env.example` to `.env` locally. Set distinct random hexadecimal `POSTGRES_PASSWORD` and `APP_DATABASE_PASSWORD` values (at least 32 characters). Keep providers mocked.
+An accepted import stores its job and outbox event in one database transaction. The worker pins the requested Git revision, acquires source without running its code, chunks and embeds eligible files, then publishes one complete index generation. Search uses scoped vector and full-text candidates with deterministic rank fusion. A run pins that generation; its three read-only tools are `search_code`, `get_file`, and `get_repository_summary`. The agent persists ordered events so an authenticated SSE client can replay from `Last-Event-ID` after reconnecting. PostgreSQL owns business state; Redis is disposable. Leases, fencing tokens, bounded retries, idempotency keys, admission limits, and budget reservations constrain duplicate delivery and resource use. See [architecture](docs/architecture.md), [contracts](docs/contracts.md), and [failure modes](docs/failure-modes.md).
 
-```text
-docker compose up --build --wait --wait-timeout 180
-```
+## API and data
 
-Use [health](http://127.0.0.1:8000/healthz) and [readiness](http://127.0.0.1:8000/readyz). Data services and worker management ports are private. The [development guide](docs/development.md) covers Windows setup, shutdown, and dependency-failure tests. [T11 security review](docs/t11-security.md) records the public API boundary, scans, and remaining hosting work. The T12 HNSW migration can take several minutes on an existing 100K-chunk database; plan an indexing write pause during upgrade.
+Bearer authentication protects `POST /v1/repositories`, `GET /v1/jobs/{job_id}`, `POST /v1/search`, `POST /v1/runs`, `GET /v1/runs/{run_id}`, and `GET /v1/runs/{run_id}/events`. `/healthz` and `/readyz` are unauthenticated. Public `/metrics`, interactive API docs, and OpenAPI routes are disabled; metrics are private. The [versioned public OpenAPI contract](packages/contracts/openapi/public.yaml) and [schema guide](docs/contracts.md) describe payloads and errors. Database migrations live in `src/reposcope/infrastructure/db/migrations`; only the migration role has DDL privileges.
 
-## Verify
+Only canonical public `github.com` repositories are accepted. The indexer filters binary, oversized, generated, and vendor files, records skip reasons, and preserves immutable commit/path/line provenance. Python and TypeScript/TSX use pinned Tree-sitter grammars; other eligible text uses a labeled token/line fallback. No imported repository build, hook, plugin, or source code is executed.
 
-```text
-uv run --frozen python scripts/export_contracts.py --check
-uv run --frozen python scripts/validate_contracts.py
-uv run --frozen pytest -q
-uv run --frozen mypy
-uv run --frozen ruff check .
-uv run --frozen ruff format --check .
-uv run --frozen python scripts/smoke_test.py
-```
+## Evidence and operations
 
-The last command needs a running Docker daemon and uses an isolated disposable Compose project. It verifies startup, real readiness, migrations, outages/recovery, and graceful shutdown. Offline tests do not substitute for this gate.
+The [T12 performance report](docs/t12-performance.md) includes the corpus manifest, 200 fixed queries, raw measurements, SQL plans, and an 8-CPU isolated database profile. Its shipped HNSW setting reached Recall@10 0.9235 against exact mock-vector neighbors and roughly 80 QPS at 32 active clients, while search p95 was 438–445 ms, above the 100-ms target. Vector-neighbor recall does **not** measure semantic answer relevance. A separate development HTTP health profile missed the 30-ms target. Live-provider search, full-agent latency, and single-job 100K ingestion are still open.
 
-## Architecture
+The [operations guide](docs/t10-operations.md) explains private metrics, logs, admission, and a tested fault matrix. [Recovery instructions](docs/failure-modes.md) cover dependency loss, replay, and operator boundaries. [Security](SECURITY.md) and the [T11 review](docs/t11-security.md) describe the current localhost boundary and unresolved image advisories. There is no hosted HTTPS endpoint, backup/restore proof, or production availability claim yet.
 
-Three Python roles share typed contracts and a layered package: FastAPI API/control plane, indexer, and agent. PostgreSQL/pgvector owns durable state and admission, JetStream delivers durable work, and Redis is a disposable runtime dependency. Read [architecture](docs/architecture.md), [specification](docs/spec.md), and [roadmap](docs/roadmap.md).
+## Development and project layout
 
-Source acquisition and indexing never execute repository code. The default embedding and agent providers are labeled mocks; answer quality is not inferred from them. Explicit live indexing, retrieval and agent calls require a local key, paid-call opt-in, current operator-verified prices and budgets. See [T06 indexing](docs/t06-indexing.md), [T07 retrieval](docs/t07-retrieval.md), [T08 agent](docs/t08-agent.md), [T09 run events and demo](docs/t09-events-and-demo.md), and [T10 operations](docs/t10-operations.md). No paid provider call was made in local milestone checks.
+Run the full offline checks with `uv run --frozen pytest -q`, `uv run --frozen mypy`, `uv run --frozen ruff check .`, and `uv run --frozen ruff format --check .`. Check contract exports with `uv run --frozen python scripts/export_contracts.py --check` and `uv run --frozen python scripts/validate_contracts.py`. The isolated Docker acceptance is `uv run --frozen python scripts/smoke_test.py`; it creates its own disposable volumes and makes no paid calls. See [development](docs/development.md) and [contributing](CONTRIBUTING.md).
 
-## Configuration and secrets
+`src/reposcope/` holds application roles, services, adapters, and migrations; `contracts/` and `packages/contracts/` hold canonical and exported wire contracts; `scripts/` holds the CLI and checks; `bench/` holds reproducible benchmark programs and manifests; `tests/` holds offline and opt-in integration checks; `docs/` holds the [specification](docs/spec.md), [roadmap](docs/roadmap.md), [ADRs](docs/adr/), [interview guide](docs/interview-guide.md), and verification record. The earlier Go control-plane proposal was superseded by the [documented Python decision](docs/adr/004-python-control-plane.md).
 
-Secret fields in `.env.example` are blank. Configure them locally; never send secrets through chat or include them in archives. `.gitignore` and `.dockerignore` exclude credential files. Processes read only their environment; Compose supplies it.
-
-## Documents
-
-- [Engineering rules](AGENTS.md) and [contribution guide](CONTRIBUTING.md)
-- [Development and tests](docs/development.md)
-- [Dependencies](docs/dependencies.md) and [runtime image pins](docs/runtime-images.json)
-- [State and error contracts](docs/contracts.md)
-- [Threat model](docs/threat-model.md) and [model policy](docs/model-policy.md)
-- [Requirements](docs/requirements.md) and [status/evidence](docs/project-status.md)
-
-The owner's private [GitHub repository](https://github.com/supercodingDen/RepoScope) is synchronized after each completed task. Public release is scheduled for T14 and hosted deployment for T15. Apache-2.0 remains proposed; formal licensing and notices are part of T13.
+RepoScope source is licensed under [Apache-2.0](LICENSE). See [NOTICE](NOTICE) and [third-party notices](docs/third-party-notices.md). T14 covers a reviewed public release; T15 covers HTTPS hosting and restore/rollback proof; T16 covers final acceptance. The [project status](docs/project-status.md) records open gates instead of treating roadmap intent as completed evidence.

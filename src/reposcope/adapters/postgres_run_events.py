@@ -18,6 +18,20 @@ from reposcope.ports.run_events import EventBatch
 type RunEventData = StartedData | ToolData | CompletedData | FailedData
 
 
+def decode_db_run_event(run_id: UUID, sequence: int, occurred_at: datetime, data: str) -> RunEvent:
+    """Validate stored JSON in JSON mode so nested UUID strings retain strict typing."""
+    return RunEvent.model_validate_json(
+        json.dumps(
+            {
+                "run_id": str(run_id),
+                "sequence": sequence,
+                "occurred_at": occurred_at.isoformat(),
+                "data": json.loads(data),
+            }
+        )
+    )
+
+
 async def append_run_event(
     connection: AsyncConnection[tuple[str]], run_id: UUID, data: RunEventData
 ) -> int:
@@ -115,14 +129,7 @@ class PostgresRunEvents:
                 )
                 rows = cast(list[tuple[int, datetime, str]], await cursor.fetchall())
                 events = tuple(
-                    RunEvent.model_validate(
-                        {
-                            "run_id": run_id,
-                            "sequence": sequence,
-                            "occurred_at": occurred_at,
-                            "data": json.loads(data),
-                        }
-                    )
+                    decode_db_run_event(run_id, sequence, occurred_at, data)
                     for sequence, occurred_at, data in rows
                 )
                 cursor = await connection.execute(

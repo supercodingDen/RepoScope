@@ -1,0 +1,9 @@
+RepoScope
+Copyright 2026 RepoScope contributors
+
+This project is licensed under the Apache License, Version 2.0. See LICENSE.
+
+Third-party packages and container images retain their own licenses and notices.
+See docs/third-party-notices.md and the license metadata shipped with each
+installed distribution. The benchmark source repositories are referenced by
+manifest and download instructions; their source is not included here.

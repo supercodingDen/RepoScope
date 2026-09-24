@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-import json
+from datetime import datetime
+from typing import cast
 from uuid import UUID, uuid4
 
 import pytest
 
-from contracts.models import AgentRequested, RunEvent, RunResult
+from contracts.models import AgentRequested, Citation, RunResult
 from reposcope.adapters.postgres_delivery import PostgresDeliveryRepository
-from reposcope.adapters.postgres_run_events import PostgresRunEvents
+from reposcope.adapters.postgres_run_events import PostgresRunEvents, decode_db_run_event
 from reposcope.domain.delivery import Complete, Lease
 from reposcope.domain.errors import WorkError
 from tests.integration.test_work_persistence import DatabaseHarness, database, ingest, ready
@@ -23,7 +24,7 @@ async def test_terminal_result_and_replay_event_commit_together(
     database: DatabaseHarness,
 ) -> None:
     accepted = await ingest(database)
-    await ready(database, accepted)
+    generation_id = await ready(database, accepted)
     response = await database.client.post(
         "/v1/runs",
         json={"repository_id": str(accepted.repository_id), "question": "Where is the answer?"},
@@ -41,9 +42,19 @@ async def test_terminal_result_and_replay_event_commit_together(
     lease = await delivery.claim(event, "agent", uuid4())
     assert isinstance(lease, Lease)
     result = RunResult(
-        answer="Insufficient evidence.",
-        citations=[],
-        evidence_status="insufficient",
+        answer="The answer is cited.",
+        citations=[
+            Citation(
+                chunk_id=uuid4(),
+                repository_id=accepted.repository_id,
+                generation_id=generation_id,
+                commit_sha="a" * 40,
+                path="src/answer.py",
+                start_line=1,
+                end_line=2,
+            )
+        ],
+        evidence_status="supported",
         model="mock",
         estimated_cost_usd="0.000000",
     )
@@ -55,14 +66,8 @@ async def test_terminal_result_and_replay_event_commit_together(
     )
     rows = await cursor.fetchall()
     assert len(rows) == 1
-    replayed = RunEvent.model_validate(
-        {
-            "run_id": run_id,
-            "sequence": rows[0][0],
-            "occurred_at": rows[0][1],
-            "data": json.loads(rows[0][2]),
-        }
-    )
+    sequence, occurred_at, data = cast(tuple[int, datetime, str], rows[0])
+    replayed = decode_db_run_event(run_id, sequence, occurred_at, data)
     assert replayed.sequence == 1
     assert replayed.data.kind == "run.completed"
     assert replayed.data.result == result

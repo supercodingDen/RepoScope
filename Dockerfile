@@ -34,6 +34,8 @@ COPY --from=dependencies /app/tiktoken-cache /app/tiktoken-cache
 COPY scripts/import_local_source.py ./scripts/import_local_source.py
 COPY contracts ./contracts
 COPY src ./src
+COPY LICENSE NOTICE ./
+COPY docs/third-party-notices.md ./docs/third-party-notices.md
 ENV PATH="/app/.venv/bin:$PATH" PYTHONPATH="/app/src:/app" PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 HOME=/tmp TIKTOKEN_CACHE_DIR=/app/tiktoken-cache
 USER 10001:10001
 EXPOSE 8000 9000

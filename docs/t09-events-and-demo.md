@@ -17,7 +17,7 @@ The agent augments initial search results with at most four chunks from one stat
 The CLI exercises the public API from import to answer. Set `REPOSCOPE_API_TOKEN` in your local environment, then run:
 
 ```text
-uv run --frozen python scripts/demo.py https://github.com/pallets/itsdangerous "Where is URL-safe signing implemented?" --api-url http://127.0.0.1:8000
+uv run --frozen python scripts/demo.py https://github.com/pallets/itsdangerous "Where is URL-safe signing implemented?" --ref 672971d66a2ef9f85151e53283113f33d642dabd --api-url http://127.0.0.1:8000
 ```
 
 Use a canonical public GitHub repository URL without a `.git` suffix. The command waits for indexing, submits the question, reconnects to the event stream with its cursor if needed, and prints the answer and immutable citation locations. The default mock provider makes no paid calls and supplies a source excerpt; use explicitly configured live providers only when desired. Import and run share a 30-minute CLI deadline.

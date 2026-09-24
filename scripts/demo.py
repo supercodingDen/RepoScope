@@ -26,6 +26,7 @@ async def demonstrate(
     question: str,
     token: str,
     *,
+    requested_ref: str = "HEAD",
     timeout_seconds: float = 1800,
     poll_seconds: float = 2,
 ) -> str:
@@ -35,7 +36,7 @@ async def demonstrate(
     accepted = await _response_json(
         await client.post(
             "/v1/repositories",
-            json={"url": repository_url},
+            json={"url": repository_url, "requested_ref": requested_ref},
             headers={**headers, "Idempotency-Key": str(uuid4())},
         )
     )
@@ -110,6 +111,7 @@ def main() -> None:
     parser.add_argument("repository_url", help="Canonical public https://github.com/owner/repo URL")
     parser.add_argument("question")
     parser.add_argument("--api-url", default="http://127.0.0.1:8000")
+    parser.add_argument("--ref", default="HEAD", help="Commit SHA, tag, or branch to index")
     args = parser.parse_args()
     token = os.environ.get("REPOSCOPE_API_TOKEN")
     if not token:
@@ -117,7 +119,9 @@ def main() -> None:
 
     async def execute() -> str:
         async with httpx.AsyncClient(base_url=args.api_url, timeout=20) as client:
-            return await demonstrate(client, args.repository_url, args.question, token)
+            return await demonstrate(
+                client, args.repository_url, args.question, token, requested_ref=args.ref
+            )
 
     try:
         print(asyncio.run(execute()))

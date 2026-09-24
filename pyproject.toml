@@ -2,6 +2,8 @@
 name = "reposcope"
 version = "0.1.0"
 description = "Event-driven code intelligence with bounded agent execution"
+readme = "README.md"
+license = "Apache-2.0"
 requires-python = ">=3.12,<3.14"
 dependencies = [
   "fastapi==0.141.1",

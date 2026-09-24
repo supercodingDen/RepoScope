@@ -21,6 +21,9 @@ async def test_demo_imports_waits_streams_and_prints_citations() -> None:
         requests.append(request)
         if request.url.path == "/v1/repositories":
             assert request.headers["authorization"] == "Bearer test-token"
+            assert json.loads(request.content)["requested_ref"] == (
+                "672971d66a2ef9f85151e53283113f33d642dabd"
+            )
             return httpx.Response(
                 202, json={"repository_id": str(repository_id), "job_id": str(job_id)}
             )
@@ -67,6 +70,7 @@ async def test_demo_imports_waits_streams_and_prints_citations() -> None:
             "https://github.com/example/public",
             "Where is 42?",
             "test-token",
+            requested_ref="672971d66a2ef9f85151e53283113f33d642dabd",
             timeout_seconds=5,
             poll_seconds=0,
         )
