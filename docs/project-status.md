@@ -11,6 +11,8 @@ Verification date: 2026-09-24 UTC. Working project: `D:\RepoScope_project\reposc
 
 The first T14 candidate commit on `main` (`48044a7bb5b15a66c1f2d8c11ecfb0aaede8cf25`) had three green remote `quality` jobs; its container job failed during the initial Compose `up` command with only a redacted Docker exit code. The same stack passed an isolated local repetition. The cause is undetermined; the revised commit must pass all four remote jobs before publication.
 
+Commit `b0537655f63c84dcb9d9f0bfe7bd8874275b2581` passed all four `quality` jobs on both `main` and `release/v0.1.0`. Its release workflow failed during fresh-checkout demo verification, before creating any tag or release, with a generic error after starting the stack. The demo verifier now emits a safe stage marker and bounded error classification so the next remote run can distinguish an import/run failure from a container or HTTP failure without exposing credentials.
+
 The next remote checks must confirm the actual main and release-branch commit SHAs, four `quality` job conclusions, the release job's fresh demo and six assets, the tag target, and anonymous access after public visibility is enabled. GitHub settings for required checks/review, private vulnerability reporting, and repository visibility need owner action where the account plan permits them. T15 hosting and open T12 performance/quality gates are unaffected.
 
 ## T13 delivery and verification

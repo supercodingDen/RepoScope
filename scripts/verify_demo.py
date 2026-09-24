@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import re
 import secrets
 import shutil
 import subprocess
@@ -35,6 +36,7 @@ def verify(port: int) -> None:
         print("Building and starting a fresh mock-only demo stack.", flush=True)
         command([*base, "up", "--build", "--wait", "--wait-timeout", "180"], environment, 900)
         wait_readiness(base, environment, port, 200)
+        print("Fresh stack ready; running pinned import and agent.", flush=True)
 
         async def execute() -> str:
             async with httpx.AsyncClient(base_url=f"http://127.0.0.1:{port}", timeout=20) as client:
@@ -71,9 +73,16 @@ def main() -> int:
         RuntimeError,
         ValueError,
     ) as exc:
-        message = (
-            str(exc) if isinstance(exc, SmokeFailure) else "Demo verification could not finish"
-        )
+        if isinstance(exc, SmokeFailure):
+            message = str(exc)
+        elif isinstance(exc, RuntimeError) and re.fullmatch(
+            r"(?:Import|Run) failed: [A-Z0-9_]+", str(exc)
+        ):
+            message = str(exc)
+        elif isinstance(exc, httpx.HTTPStatusError):
+            message = f"Demo API returned HTTP {exc.response.status_code}"
+        else:
+            message = f"Demo verification could not finish ({type(exc).__name__})"
         print(f"FAIL: {message}", file=sys.stderr)
         return 1
     return 0
