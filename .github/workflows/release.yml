@@ -18,7 +18,6 @@ jobs:
     permissions:
       contents: write
     env:
-      GH_TOKEN: ${{ github.token }}
       SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -31,6 +30,8 @@ jobs:
           version: "0.12.11"
       - name: Verify immutable source and absence of an existing release
         working-directory: release-source
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
@@ -85,6 +86,8 @@ jobs:
           (cd dist && sha256sum release-metadata.json reposcope-v0.1.0-images.tar.gz *-sbom.cdx.json > SHA256SUMS && sha256sum --check SHA256SUMS)
       - name: Create version tag and pre-release
         working-directory: release-source
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/release/v0.1.0" --jq '.object.sha')" = "$SOURCE_SHA"
