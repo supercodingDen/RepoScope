@@ -58,7 +58,7 @@ The frozen Python dependencies also installed successfully on Windows with isola
 
 ## T05 source transport dependency
 
-Git is an explicit system dependency for isolated source acquisition; no new Python dependency is needed. Dockerfile declares Debian bookworm `git=1:2.39.5-0+deb12u3` and `ca-certificates=20250419~deb12u1`, verified against the official [Git package](https://packages.debian.org/bookworm/git) and [CA package](https://packages.debian.org/bookworm/ca-certificates) metadata on 2026-09-22. The security-patched Debian package version differs from the upstream Windows version. Container installation/build still requires actual Docker acceptance; package metadata is not a successful build claim.
+Git is an explicit system dependency for isolated source acquisition; no new Python dependency is needed. Dockerfile declares Debian bookworm `git=1:2.39.5-0+deb12u3` and `ca-certificates=20250419~deb12u1`, verified against the official [Git package](https://packages.debian.org/bookworm/git) and [CA package](https://packages.debian.org/bookworm/ca-certificates) metadata on 2026-09-22. The security-patched Debian package version differs from the upstream Windows version. The Linux images built and passed the isolated Docker/Compose smoke on 2026-09-24; [T11 security review](t11-security.md) records the current image scans.
 
 Native Windows source tests use isolated official [MinGit 2.55.0.windows.5](https://github.com/git-for-windows/git/releases/tag/v2.55.0.windows.5), SHA-256 `56d7b226b7693196cfc71fef26568f536c4a021ab6c37ff2db4287bed908e96e`. The installed host Git is not replaced. Configure a trusted binary explicitly; imported repository code/configuration must never choose the executable.
 

@@ -1,0 +1,21 @@
+T11 local verification, 2026-09-24 UTC
+
+Scope: D:\RepoScope_project\reposcope; mock providers; no paid calls or public deployment.
+Docker Desktop 29.8.0, Compose v5.5.1, Trivy 0.74.0 (checksum verified).
+
+Full offline pytest: 360 passed, 80 skipped.
+Strict mypy: 118 source files; no issues.
+Ruff lint: passed. Ruff format: 162 files already formatted.
+Contracts: 48 files current; 20 schema/example pairs and 2 OpenAPI documents valid.
+Docker Compose config: valid.
+Isolated smoke: passed startup, migration, integration, business API, PostgreSQL/Redis/NATS outage and recovery, isolation, graceful shutdown.
+Development Compose stack: six services running and healthy after rebuild; named volumes preserved.
+Live HTTP: /healthz 200, /readyz 200, /metrics 404, /docs 404, unauthenticated /v1/jobs/<uuid> 401; no-store on each checked response.
+Runtime process users: API/indexer/agent 10001, PostgreSQL postgres, Redis 999, NATS 10001.
+Only API published: 127.0.0.1:8000; infrastructure and management ports not published.
+
+Source-only Trivy fs: zero secret matches, zero lockfile vulnerability findings.
+Source-only Gitleaks dir --redact: 248 reviewed files, about 1.28 MB, no leaks.
+Trivy image fixable HIGH/CRITICAL: runtime 0, PostgreSQL 0, Redis 0, NATS 0.
+Trivy image HIGH/CRITICAL without scanner-listed fixes: runtime 95, PostgreSQL 93, Redis 0, NATS 0.
+Raw local scanner JSON stayed outside the repository and is not a remote CI result.

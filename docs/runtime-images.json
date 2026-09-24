@@ -1,7 +1,7 @@
 [
   {
     "image": "python:3.12.14-slim-bookworm",
-    "digest": "sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254",
+    "digest": "sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e",
     "platforms": [
       "amd64",
       "ppc64le",
@@ -13,7 +13,7 @@
   },
   {
     "image": "nats:2.14.7-alpine",
-    "digest": "sha256:ae5c49895a97b129546e30908012d7c965296c02f8754cd879e9d50ed3edd508",
+    "digest": "sha256:4063edae0717ba5f7501bfde75f97fd9b57f5b93597b92c70b6a6fbbf6a74e06",
     "platforms": [
       "amd64",
       "ppc64le",
@@ -25,7 +25,7 @@
   },
   {
     "image": "redis:8.6.6-alpine",
-    "digest": "sha256:75934ddb37bfaebe3b4082ba673cac39f66495244134f33dd0a502ce03cdcd36",
+    "digest": "sha256:23a604374ece8069b34131faac7a1f05ae73c64280e46af1de844f29af2846d4",
     "platforms": [
       "amd64",
       "ppc64le",

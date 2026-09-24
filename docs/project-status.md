@@ -1,7 +1,26 @@
 # Project status
 
-Milestone: **T10 operations visibility and fault acceptance implemented in the native Windows environment**.
-Verification date: 2026-09-23 UTC. Working project: `D:\RepoScope_project\reposcope`.
+Milestone: **T11 public boundary and security review implemented locally**.
+Verification date: 2026-09-24 UTC. Working project: `D:\RepoScope_project\reposcope`.
+
+## T11 delivery and verification
+
+- Public business routes remain bearer-protected; health/readiness alone are unauthenticated. Public documentation and metrics routes are disabled. Success, error, and oversized-body responses now carry no-store and browser safety headers. The [T11 security review](t11-security.md) records the verified endpoint and resource boundary.
+- The API is the only localhost-published role. API/indexer/agent, PostgreSQL, Redis, and NATS run without root. PostgreSQL and NATS use small derived images from immutable upstream digests; the PostgreSQL image patches `libpcre2-8-0` and removes unused `gosu`.
+- A checksum-verified Trivy 0.74.0 source-only scan found zero secrets and zero dependency advisories. Image scans found zero fixable high/critical findings in the runtime, PostgreSQL, Redis, and NATS images. Unfixed high/critical advisory counts remain 95 in runtime and 93 in PostgreSQL; they are recorded as residual review items, not waived as safe. CI now repeats these scans and fails on secrets or fixable high/critical findings.
+- The isolated Docker/Compose smoke passed after the image and role changes, including migrations, container integration, business HTTP, dependency outage/recovery, and graceful shutdown. The existing development stack was rebuilt without deleting named volumes and is healthy.
+
+| T11 check | Executed result |
+| --- | --- |
+| Full offline pytest | 360 passed, 80 opt-in skipped |
+| Strict mypy, Ruff lint/format | Passed; 118 Python files type-checked, 162 formatted |
+| Contracts | 48 exports current; 20 schema/example pairs and 2 OpenAPI documents validated |
+| Docker/Compose smoke | Passed startup, migration, container integration, API, three dependency outages/recoveries, isolation, and graceful shutdown |
+| Source-only Trivy and Gitleaks | 248 reviewed files, about 1.28 MB; zero secrets and zero lockfile advisories found |
+| Image Trivy gate | Runtime, PostgreSQL, Redis, NATS: zero fixable high/critical; unresolved advisories recorded in the T11 guide |
+| Live local boundary | Six services healthy; health/readiness 200, metrics/docs 404, unauthenticated job route 401 |
+
+Remote GitHub CI status and an internet-facing HTTPS endpoint are not claimed by these local checks. Hosting, backups, and rollback remain T15.
 
 ## T10 delivery and verification
 
@@ -18,7 +37,7 @@ Verification date: 2026-09-23 UTC. Working project: `D:\RepoScope_project\reposc
 | Independent review | Four fault-evidence/logging findings fixed and rechecked; no remaining Critical or Important finding |
 | Redacted source-only Gitleaks | 242 reviewed files, approximately 1.26 MB scanned; no leaks found |
 
-Docker/Compose smoke remains unexecuted: the `docker` command is unavailable on this machine. No paid provider call was made.
+Docker was unavailable at the T10 verification date; local Docker acceptance was completed on 2026-09-24 as recorded above. No paid provider call was made.
 
 ## T09 delivery and verification
 
@@ -132,6 +151,6 @@ Disk limits are enforced by monitoring and finalization checks, with possible tr
 
 ## Next milestone
 
-T11: public access, image/dependency/secret scans, endpoint and resource security review. Later performance gates remain open. The original overall job deadline still applies to source acquisition and indexing.
+T12: 100K real chunks, 200+ fixed queries, two measured improvements, and raw before/after results. Hosted HTTPS access and backup/restore remain T15. The original overall job deadline still applies to source acquisition and indexing.
 
 The reviewed source is synchronized to the owner's private GitHub repository, `supercodingDen/RepoScope`, after each complete task. The D-drive extraction has no persistent local Git history; synchronization uses the connected GitHub integration. Public release, PR, hosted deployment and system installation were not performed. Remote CI results have not been verified. Earlier T03 evidence remains in `docs/verification/t03-checks.txt`, `t03-native-checks.txt` and the T03 API guide.

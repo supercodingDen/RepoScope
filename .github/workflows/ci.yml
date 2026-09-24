@@ -52,3 +52,35 @@ jobs:
           grep '  gitleaks_8.30.1_linux_x64.tar.gz$' gitleaks_8.30.1_checksums.txt | sha256sum --check
           tar -xzf gitleaks_8.30.1_linux_x64.tar.gz gitleaks
       - run: ./gitleaks git --redact --no-banner .
+
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install checksum-verified Trivy
+        run: |
+          curl -fsSLo trivy.tar.gz https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.74.0_Linux-64bit.tar.gz
+          echo '2ae6fe3ee734b7fdf11335663e18c75ea12dccc76062f09f164a3b0f8be4371a  trivy.tar.gz' | sha256sum --check
+          tar -xzf trivy.tar.gz trivy
+      - name: Scan current source, lockfile, and secrets
+        run: |
+          ./trivy fs --scanners vuln,secret --skip-dirs .git --quiet --format json --output source-scan.json .
+          python scripts/security_report.py source-scan.json --label source
+      - name: Build reviewed runtime and infrastructure images
+        run: |
+          docker build --target runtime -t reposcope:security .
+          docker build -f Dockerfile.postgres -t reposcope-postgres:security .
+          docker build -f Dockerfile.nats -t reposcope-nats:security .
+          test "$(docker image inspect --format '{{.Config.User}}' reposcope-postgres:security)" = postgres
+          test "$(docker image inspect --format '{{.Config.User}}' reposcope-nats:security)" = 10001:10001
+      - name: Scan runtime and infrastructure images
+        run: |
+          ./trivy image --scanners vuln,secret --quiet --format json --output runtime-scan.json reposcope:security
+          python scripts/security_report.py runtime-scan.json --label runtime
+          ./trivy image --scanners vuln,secret --quiet --format json --output postgres-scan.json reposcope-postgres:security
+          python scripts/security_report.py postgres-scan.json --label postgres
+          ./trivy image --scanners vuln,secret --quiet --format json --output redis-scan.json 'redis:8.6.6-alpine@sha256:23a604374ece8069b34131faac7a1f05ae73c64280e46af1de844f29af2846d4'
+          python scripts/security_report.py redis-scan.json --label redis
+          ./trivy image --scanners vuln,secret --quiet --format json --output nats-scan.json reposcope-nats:security
+          python scripts/security_report.py nats-scan.json --label nats

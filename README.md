@@ -2,7 +2,7 @@
 
 Event-driven code intelligence with source-grounded answers and bounded agent costs.
 
-**Current milestone: T10 — operations visibility and fault acceptance.** T02–T09 delivered the runtime, admission, durable work, pinned source acquisition, indexing, retrieval, read-only agent, and resumable run events. T10 adds private metrics, safe correlated logs, backlog sampling, and a tested failure matrix. See [project status](docs/project-status.md) for executed checks and outstanding gates.
+**Current milestone: T11 — public boundary and security review.** T02–T10 delivered the runtime, admission, durable work, pinned source acquisition, indexing, retrieval, read-only agent, resumable events, and operations checks. T11 adds endpoint hardening, non-root infrastructure roles, and repeatable source/image security scans. See [project status](docs/project-status.md) for executed checks and outstanding gates.
 
 ## Start
 
@@ -18,7 +18,7 @@ Copy `.env.example` to `.env` locally. Set distinct random hexadecimal `POSTGRES
 docker compose up --build --wait --wait-timeout 180
 ```
 
-Use [health](http://127.0.0.1:8000/healthz) and [readiness](http://127.0.0.1:8000/readyz). Data services and worker management ports are private. The [development guide](docs/development.md) covers Windows setup, shutdown, and dependency-failure tests.
+Use [health](http://127.0.0.1:8000/healthz) and [readiness](http://127.0.0.1:8000/readyz). Data services and worker management ports are private. The [development guide](docs/development.md) covers Windows setup, shutdown, and dependency-failure tests. [T11 security review](docs/t11-security.md) records the public API boundary, scans, and remaining hosting work.
 
 ## Verify
 

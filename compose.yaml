@@ -44,7 +44,10 @@ x-runtime: &runtime
 
 services:
   postgres:
-    image: pgvector/pgvector:0.8.6-pg17-bookworm@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
+    image: reposcope-postgres:local
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
     environment:
       POSTGRES_DB: reposcope
       POSTGRES_USER: reposcope_migrator
@@ -61,7 +64,7 @@ services:
     cpus: 1.0
 
   redis:
-    image: redis:8.6.6-alpine@sha256:75934ddb37bfaebe3b4082ba673cac39f66495244134f33dd0a502ce03cdcd36
+    image: redis:8.6.6-alpine@sha256:23a604374ece8069b34131faac7a1f05ae73c64280e46af1de844f29af2846d4
     command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
     networks: [backend]
     restart: unless-stopped
@@ -74,7 +77,10 @@ services:
     cpus: 0.5
 
   nats:
-    image: nats:2.14.7-alpine@sha256:ae5c49895a97b129546e30908012d7c965296c02f8754cd879e9d50ed3edd508
+    image: reposcope-nats:local
+    build:
+      context: .
+      dockerfile: Dockerfile.nats
     command: ["-js", "-sd", "/data", "-m", "8222"]
     volumes: [nats-data:/data]
     networks: [backend]

@@ -251,6 +251,7 @@ def _install_request_context(application: FastAPI) -> None:
             response = await call_next(request)
             status = response.status_code
             response.headers["X-Request-ID"] = str(request_id)
+            _security_headers(response)
             return response
         finally:
             if request.url.path.startswith("/v1/"):
@@ -371,12 +372,22 @@ def _problem_response(
     response_headers = {"X-Request-ID": str(problem.request_id)}
     if headers is not None:
         response_headers.update(headers)
-    return JSONResponse(
+    response = JSONResponse(
         status_code=status,
         content=problem.model_dump(mode="json"),
         media_type="application/problem+json",
         headers=response_headers,
     )
+    _security_headers(response)
+    return response
+
+
+def _security_headers(response: Response) -> None:
+    """Keep public JSON, errors and event streams out of browser caches and renderers."""
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Content-Security-Policy"] = "default-src 'none'"
 
 
 def _request_id(value: str | None) -> UUID:

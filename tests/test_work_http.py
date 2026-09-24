@@ -116,6 +116,44 @@ async def test_authentication_server_owned_identity_and_missing_token() -> None:
 
 
 @pytest.mark.asyncio
+async def test_public_responses_do_not_cache_or_render_untrusted_content() -> None:
+    repository = TestRepository()
+    async with client(repository) as http:
+        success = await http.post(
+            "/v1/repositories",
+            headers={"Authorization": "Bearer test-token", "Idempotency-Key": "secure-response"},
+            json={"url": "https://github.com/example/repo"},
+        )
+        unauthorized = await http.get(f"/v1/jobs/{uuid4()}")
+        oversized = await http.post("/v1/repositories", content=b"x" * 65537)
+        for response in (success, unauthorized, oversized):
+            assert response.headers["Cache-Control"] == "no-store"
+            assert response.headers["X-Content-Type-Options"] == "nosniff"
+            assert response.headers["Referrer-Policy"] == "no-referrer"
+            assert response.headers["Content-Security-Policy"] == "default-src 'none'"
+
+
+@pytest.mark.asyncio
+async def test_public_surface_exposes_only_health_without_authentication() -> None:
+    async with client(TestRepository()) as http:
+        for path in ("/healthz", "/readyz"):
+            assert (await http.get(path)).status_code == 200
+        for path in ("/metrics", "/docs", "/redoc", "/openapi.json"):
+            assert (await http.get(path)).status_code == 404
+        for method, path in (
+            ("POST", "/v1/repositories"),
+            ("GET", f"/v1/jobs/{uuid4()}"),
+            ("POST", "/v1/runs"),
+            ("GET", f"/v1/runs/{uuid4()}"),
+            ("GET", f"/v1/runs/{uuid4()}/events"),
+            ("POST", "/v1/search"),
+        ):
+            response = await http.request(method, path)
+            assert response.status_code == 401
+            assert response.headers["WWW-Authenticate"] == "Bearer"
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "body,key",
     [

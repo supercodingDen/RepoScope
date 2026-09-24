@@ -67,11 +67,11 @@ A missing Docker daemon fails this prerequisite. Integration tests skip in ordin
 
 ## Quality gates
 
-CI checks schema drift, semantic fixtures, Ruff formatting/lint, strict mypy (src/scripts/tests), pytest, compilation, container build/smoke, and Gitleaks. Actions use verified commit pins. Gitleaks 8.30.1 is checksum-verified and redacts findings. Python dependencies retain the frozen uv.lock; T02 and T03 add no third-party Python dependencies.
+CI checks schema drift, semantic fixtures, Ruff formatting/lint, strict mypy (src/scripts/tests), pytest, compilation, container build/smoke, Gitleaks, and Trivy source/image scans. Actions use verified commit pins. Gitleaks 8.30.1 and Trivy 0.74.0 are checksum-verified. The image gate fails on fixable high/critical findings; the source gate also fails on secret matches. Python dependencies retain the frozen uv.lock.
 
-T03 provides persistent admission and status endpoints. Worker execution, GitHub CI execution and external hosting are separate milestones; local checks do not imply deployment.
+The API, workers, and local Docker integration are implemented. External hosting is a separate milestone; local checks do not imply deployment or remote CI success.
 
-T06 indexing now runs in the indexer after T05's durable source handoff. Keep the default mock provider for normal development and tests. Live embeddings require the explicit indexer-only environment settings documented in [T06 indexing](t06-indexing.md). Apply `0005_index` before starting the roles; readiness requires that migration. The Windows native PostgreSQL/NATS acceptance does not substitute for the still-open Docker/Compose smoke gate.
+T06 indexing runs in the indexer after T05's durable source handoff. Keep the default mock provider for normal development and tests. Live embeddings require the explicit indexer-only environment settings documented in [T06 indexing](t06-indexing.md). Compose applies all current migrations before starting the roles. The Docker/Compose smoke gate passed locally on 2026-09-24; run it again after infrastructure changes.
 
 ### Optional native broker recovery check
 

@@ -28,4 +28,4 @@ Residual limits: a single-host installation has a single failure domain; static 
 
 ## Secret handling status
 
-No credential supplied in chat is copied into this repository or its deliverables. The local .env contains blank credential fields and owner-only permissions. This does not revoke the previously disclosed key; the account owner must revoke it in the provider dashboard. Do not request that the replacement key be pasted into chat.
+No credential supplied in chat is copied into this repository or its deliverables. The developer's local `.env` is ignored by Git and Docker build context; it may contain locally generated credentials and must never be read, copied, scanned, or uploaded by source tooling. A credential disclosed elsewhere is not revoked by exclusion from source control; its account owner must rotate it outside the project. Do not request a replacement credential in chat.
