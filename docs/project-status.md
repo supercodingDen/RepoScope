@@ -12,7 +12,7 @@ Verification date: 2026-09-24 UTC. Working project: `D:\RepoScope_project\reposc
 
 | T11 check | Executed result |
 | --- | --- |
-| Full offline pytest | 360 passed, 80 opt-in skipped |
+| Full offline pytest | 361 passed, 80 opt-in skipped |
 | Strict mypy, Ruff lint/format | Passed; 118 Python files type-checked, 162 formatted |
 | Contracts | 48 exports current; 20 schema/example pairs and 2 OpenAPI documents validated |
 | Docker/Compose smoke | Passed startup, migration, container integration, API, three dependency outages/recoveries, isolation, and graceful shutdown |

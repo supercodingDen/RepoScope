@@ -3,7 +3,8 @@ T11 local verification, 2026-09-24 UTC
 Scope: D:\RepoScope_project\reposcope; mock providers; no paid calls or public deployment.
 Docker Desktop 29.8.0, Compose v5.5.1, Trivy 0.74.0 (checksum verified).
 
-Full offline pytest: 360 passed, 80 skipped.
+Full offline pytest: 361 passed, 80 skipped.
+The initial remote container job failed because the standalone smoke script could not import contracts without PYTHONPATH. A regression test now runs the script with Python isolated mode; the full isolated Docker smoke passed again with isolated mode and no PYTHONPATH.
 Strict mypy: 118 source files; no issues.
 Ruff lint: passed. Ruff format: 162 files already formatted.
 Contracts: 48 files current; 20 schema/example pairs and 2 OpenAPI documents valid.

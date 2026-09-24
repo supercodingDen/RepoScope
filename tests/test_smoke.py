@@ -3,10 +3,26 @@
 from __future__ import annotations
 
 import string
+import subprocess
+import sys
+from pathlib import Path
 
 import pytest
 
 from scripts.smoke_test import smoke_environment
+
+
+def test_smoke_entrypoint_imports_contracts_without_pythonpath() -> None:
+    root = Path(__file__).resolve().parents[1]
+    result = subprocess.run(
+        [sys.executable, "-I", str(root / "scripts" / "smoke_test.py"), "--help"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
 
 
 def test_smoke_environment_removes_inherited_compose_configuration(

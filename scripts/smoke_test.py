@@ -14,9 +14,8 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from contracts.models import JobView, RepositoryAccepted
-
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 ROLES = ("api", "indexer", "agent")
 
 
@@ -95,6 +94,8 @@ def wait_readiness(base: list[str], environment: dict[str, str], port: int, expe
 
 def check_business_api(port: int, token: str) -> None:
     """Verify authenticated admission, replay, conflict and status over real HTTP."""
+    from contracts.models import JobView, RepositoryAccepted
+
     base = f"http://127.0.0.1:{port}"
     if public_status(port, "v1/jobs/00000000-0000-0000-0000-000000000001") != 401:
         raise SmokeFailure("Business authentication contract failed")
