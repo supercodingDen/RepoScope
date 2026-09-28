@@ -1,0 +1,181 @@
+name: reposcope-production
+
+x-application: &application
+  image: ${REPOSCOPE_APP_IMAGE:?Set a tested post-T15 application image}
+  pull_policy: never
+  init: true
+  restart: unless-stopped
+  read_only: true
+  tmpfs: [/tmp:size=64m,mode=1777]
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  stop_grace_period: 30s
+  pids_limit: 128
+  mem_limit: 512m
+  cpus: 1.0
+  logging: &bounded-logs
+    driver: local
+    options: {max-size: 10m, max-file: "3"}
+  secrets: &application-secrets
+    - app_database_password
+    - api_token
+  environment: &application-environment
+    APP_ENV: production
+    PUBLIC_HOST: 0.0.0.0
+    MANAGEMENT_HOST: 0.0.0.0
+    PROVIDER_MODE: ${PROVIDER_MODE:-mock}
+    ALLOW_PAID_API_CALLS: ${ALLOW_PAID_API_CALLS:-false}
+    REPOSCOPE_PRINCIPAL_ID: ${REPOSCOPE_PRINCIPAL_ID:-00000000-0000-0000-0000-000000000001}
+    REDIS_URL: redis://redis:6379/0
+    NATS_URL: nats://nats:4222
+    EMBEDDING_DAILY_BUDGET_USD: ${EMBEDDING_DAILY_BUDGET_USD:-}
+    EMBEDDING_PRICE_PER_MILLION_USD: ${EMBEDDING_PRICE_PER_MILLION_USD:-}
+    EMBEDDING_PRICE_VERIFIED_DATE: ${EMBEDDING_PRICE_VERIFIED_DATE:-}
+    AGENT_INPUT_PRICE_PER_MILLION_USD: ${AGENT_INPUT_PRICE_PER_MILLION_USD:-}
+    AGENT_OUTPUT_PRICE_PER_MILLION_USD: ${AGENT_OUTPUT_PRICE_PER_MILLION_USD:-}
+    AGENT_PRICE_VERIFIED_DATE: ${AGENT_PRICE_VERIFIED_DATE:-}
+  depends_on: &application-dependencies
+    migrate: {condition: service_completed_successfully}
+    redis: {condition: service_healthy}
+    nats: {condition: service_healthy}
+  healthcheck:
+    test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/readyz', timeout=4).close()"]
+    interval: 10s
+    timeout: 5s
+    retries: 3
+    start_period: 30s
+
+services:
+  proxy:
+    image: ${CADDY_IMAGE:?Set a reviewed Caddy image with an immutable sha256 digest}
+    pull_policy: missing
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    environment:
+      REPOSCOPE_DOMAIN: ${REPOSCOPE_DOMAIN:?Set a public DNS name}
+    networks: [ingress, egress]
+    depends_on:
+      api: {condition: service_healthy}
+    logging: *bounded-logs
+    mem_limit: 256m
+    cpus: 0.5
+
+  postgres:
+    image: ${REPOSCOPE_POSTGRES_IMAGE:?Set the matching release PostgreSQL image}
+    pull_policy: never
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: reposcope
+      POSTGRES_USER: reposcope_migrator
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets: [postgres_password]
+    volumes: [postgres-data:/var/lib/postgresql/data]
+    networks: [backend]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U reposcope_migrator -d reposcope"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    logging: *bounded-logs
+    mem_limit: 1g
+    cpus: 1.0
+
+  redis:
+    image: redis:8.6.6-alpine@sha256:23a604374ece8069b34131faac7a1f05ae73c64280e46af1de844f29af2846d4
+    restart: unless-stopped
+    command: [redis-server, --save, "", --appendonly, "no", --maxmemory, 64mb, --maxmemory-policy, allkeys-lru]
+    networks: [backend]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    logging: *bounded-logs
+    mem_limit: 128m
+    cpus: 0.5
+
+  nats:
+    image: ${REPOSCOPE_NATS_IMAGE:?Set the matching release NATS image}
+    pull_policy: never
+    restart: unless-stopped
+    command: [-js, -sd, /data, -m, "8222"]
+    volumes: [nats-data:/data]
+    networks: [backend]
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1:8222/healthz?js-enabled-only=true"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    logging: *bounded-logs
+    mem_limit: 256m
+    cpus: 0.5
+
+  migrate:
+    image: ${REPOSCOPE_APP_IMAGE:?Set a tested post-T15 application image}
+    pull_policy: never
+    command: [python, /app/scripts/launch_from_secrets.py, migrate]
+    restart: "no"
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    secrets: [postgres_password, app_database_password]
+    networks: [backend]
+    depends_on:
+      postgres: {condition: service_healthy}
+    logging: *bounded-logs
+
+  api:
+    <<: *application
+    command: [python, /app/scripts/launch_from_secrets.py, api]
+    environment: *application-environment
+    secrets: *application-secrets
+    depends_on: *application-dependencies
+    networks: [backend, ingress, egress]
+
+  indexer:
+    <<: *application
+    command: [python, /app/scripts/launch_from_secrets.py, indexer]
+    environment:
+      <<: *application-environment
+      REPOSCOPE_GIT_BINARY: /usr/bin/git
+      REPOSCOPE_SOURCE_ROOT: /var/lib/reposcope/sources
+    secrets: [app_database_password]
+    depends_on: *application-dependencies
+    networks: [backend, egress]
+    volumes: [source-data:/var/lib/reposcope/sources]
+
+  agent:
+    <<: *application
+    command: [python, /app/scripts/launch_from_secrets.py, agent]
+    environment:
+      <<: *application-environment
+      REPOSCOPE_SOURCE_ROOT: /var/lib/reposcope/sources
+    secrets: [app_database_password]
+    depends_on: *application-dependencies
+    networks: [backend, egress]
+    volumes: [source-data:/var/lib/reposcope/sources:ro]
+
+networks:
+  backend: {internal: true}
+  ingress: {internal: true}
+  egress: {}
+
+volumes:
+  postgres-data: {}
+  nats-data: {}
+  source-data: {}
+  caddy-data: {}
+  caddy-config: {}
+
+secrets:
+  postgres_password:
+    file: ${REPOSCOPE_SECRETS_DIR:?Set the protected secret directory}/postgres_password
+  app_database_password:
+    file: ${REPOSCOPE_SECRETS_DIR:?Set the protected secret directory}/app_database_password
+  api_token:
+    file: ${REPOSCOPE_SECRETS_DIR:?Set the protected secret directory}/api_token

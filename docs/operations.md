@@ -1,0 +1,7 @@
+# Production operations handover
+
+Use the [deployment runbook](deployment.md) and [owner configuration](manual-configuration.md) before operating a host. This single-host service has no high-availability guarantee. The existing [T10 operations guide](t10-operations.md) covers metrics, queue depth, deadlines, failure codes, and the local fault matrix; [failure modes](failure-modes.md) covers safe recovery decisions.
+
+At each shift, check public TLS validity, API readiness, Compose service health, host disk and memory, database/JetStream/source volume growth, backup age, and pending outbox/jobs. Keep `/metrics`, management ports, PostgreSQL, Redis, and NATS private. Route `scripts/check_disk.sh` failures, certificate-renewal errors, backup failures, and repeated worker restarts to a real alert receiver. The Compose `local` log driver limits each service to three 10 MiB files; preserve only redacted diagnostic excerpts in tickets.
+
+Before upgrade, record source SHA/image IDs and run/retain a verified off-host backup. Rehearse new images and migrations in an isolated project. During incident recovery, restore the database and source volume together, then let the outbox/consumer reconciliation rebuild broker delivery. Redis may be recreated. Run the actual restore and rollback checks in [acceptance](acceptance.md); neither script has been exercised on a configured host. Never delete named volumes as a routine fix.

@@ -1,0 +1,11 @@
+services:
+  api:
+    secrets: [app_database_password, api_token, openai_api_key]
+  indexer:
+    secrets: [app_database_password, openai_api_key]
+  agent:
+    secrets: [app_database_password, openai_api_key]
+
+secrets:
+  openai_api_key:
+    file: ${REPOSCOPE_SECRETS_DIR:?Set the protected secret directory}/openai_api_key

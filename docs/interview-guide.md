@@ -11,3 +11,23 @@ Use this guide to explain the implemented system and its limits. Demonstrate the
 7. **What is the security boundary?** The local API binds loopback, business routes require a bearer token, other service ports are private, and imported code is never executed. The [T11 review](t11-security.md) records scan results and unresolved image advisories. TLS, domain, host firewall, and off-host backups are T15 work.
 
 Avoid describing RepoScope as highly available, production deployed, semantically validated, or fully meeting the PDF's performance targets. A measured improvement is defensible only with its workload, baseline, raw measurements, and caveats from the [performance report](t12-performance.md).
+
+## Five-minute reviewer path
+
+Use the [local demo](demo.md) only after the stack is already ready. In the first minute, show a pinned public repository import and explain that HTTP 202 is backed by one database transaction containing job and outbox event. In the second minute, show worker progress and describe lease fencing and a complete index generation. In the third, perform scoped hybrid search and inspect a path/line/commit citation. In the fourth, submit a read-only agent run and reconnect to SSE with `Last-Event-ID`. In the fifth, show the [fault matrix](t10-operations.md), [raw T12 measurements](t12-performance.md), and [acceptance ledger](acceptance.md), naming the remaining public-host and performance gates. Cold builds and source acquisition are outside a guaranteed five-minute duration.
+
+## Truthful English resume bullets
+
+**SWE version**
+
+- Built RepoScope, a Python/FastAPI code-intelligence service with asynchronous repository ingestion, PostgreSQL transactional outbox, NATS JetStream workers, fenced leases, idempotent jobs, and resumable SSE events.
+- Implemented immutable Git revision pinning, bounded source acquisition, AST-aware Python/TypeScript chunking, hybrid pgvector/full-text retrieval, and file/line/commit citations without executing ingested code.
+- Benchmarked 100,029 real code chunks and 200 fixed queries; measured ~80 QPS at 32 active search clients and Recall@10 of 0.9235 against exact mock-vector neighbors while documenting the unmet 100-ms p95 target.
+
+**AI/ML version**
+
+- Designed a retrieval-augmented code agent with three read-only tools, scoped evidence, one-hop dependency expansion, token budgets, immutable citations, and persisted event replay.
+- Implemented batched 384-dimensional embedding pipelines with provenance and generation isolation; compared exact and HNSW neighbors plus full-text fusion on 100,029 real code chunks and 200 fixed queries.
+- Added explicit model routing and atomic spend reservations, with mock-by-default execution and live-provider costs gated by verified prices and operator opt-in; reported mock-vector recall separately from unmeasured semantic answer quality.
+
+These bullets describe source/local evidence, not a public production deployment. Update them only after the open [acceptance gates](acceptance.md) have actual proof.

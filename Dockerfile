@@ -32,6 +32,7 @@ WORKDIR /app
 COPY --from=dependencies /app/.venv /app/.venv
 COPY --from=dependencies /app/tiktoken-cache /app/tiktoken-cache
 COPY scripts/import_local_source.py ./scripts/import_local_source.py
+COPY scripts/launch_from_secrets.py ./scripts/launch_from_secrets.py
 COPY contracts ./contracts
 COPY src ./src
 COPY LICENSE NOTICE ./

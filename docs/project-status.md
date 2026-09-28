@@ -1,7 +1,15 @@
 # Project status
 
-Milestone: **Private v0.1.0 pre-release published and verified; public visibility and repository settings remain open. T12 performance acceptance remains open**.
-Verification date: 2026-09-24 UTC. Working project: `D:\RepoScope_project\reposcope`.
+Milestone: **T15/T16 source handover prepared; actual hosted/public and remaining T12 acceptance gates remain open**.
+Verification date: 2026-09-28 local source checks. Working project: `D:\RepoScope_project\reposcope`.
+
+## T15/T16 source delivery and open acceptance
+
+- Added a production-only Compose topology, Caddy reverse proxy, protected file-based runtime secrets, separate migration credentials, bounded logs, persistent PostgreSQL/JetStream/source volumes, and private infrastructure networks. The local development Compose file remains separate. The old `v0.1.0` images lack the production launcher and must not be used with this topology; a reviewed post-T15 image set is required.
+- Added quiescent PostgreSQL/source backup, fresh isolated-project restore, disk-threshold scripts, [deployment](deployment.md) and [operations](operations.md) runbooks, a complete [owner manual-configuration procedure](manual-configuration.md), [R01-R32 acceptance ledger](acceptance.md), handover notes, and a five-minute interview path with qualified SWE/AI bullets.
+- Docker Desktop's Linux engine was unavailable during this work, so production Compose execution, image builds, source-volume backup, PostgreSQL restore, hosted HTTPS, restart persistence, external authenticated demo/SSE, rollback, and live paid-provider evaluation are **not verified**. The owner has not supplied host, domain, off-host storage, or live credentials. They are explicit follow-up gates, not completed T15 deployment.
+- Public GitHub visibility and protected-branch/security settings remain T14 owner actions. T12 search/non-search p95, semantic quality, live-provider, and single-job 100K ingestion gates remain open; previous T12 measurements are unchanged. See [acceptance](acceptance.md) before claiming final delivery.
+- Local verification after these changes: 376 offline tests passed, 80 opt-in tests skipped; strict mypy passed 130 Python files; Ruff lint/format passed; both production Compose variants parsed without a running daemon; three Bash scripts passed syntax checks; 48 contract exports and 20 schema/example pairs plus two OpenAPI documents validated; 57 Markdown files had no broken local links. A redacted source-only Gitleaks pass scanned 296 allowlisted files and found no leaks. The local `.env` was not read or scanned. Docker container execution remains open; remote CI must be checked against the exact synchronized commit.
 
 ## T14 private release and remaining public gate
 

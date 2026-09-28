@@ -13,3 +13,5 @@ The source checkout and default mock stack do not require a model account. `.env
 | Exact 8-vCPU/16-GiB reference host and live provider evaluation | Open T12 acceptance | Required for remaining latency, semantic relevance, and 100K single-job claims; see [performance](t12-performance.md). |
 
 The current local stack has previously passed the isolated Docker smoke test, but this table does not infer the contents of anyone's `.env` or confirm that optional live/hosting settings exist. Changing PostgreSQL's bootstrap password in `.env` after its volume was initialized does not rotate the database role; follow a deliberate credential-rotation procedure. Do not delete named volumes to change a password.
+
+For every remaining owner-controlled action, including GitHub visibility and rules, Linux host, DNS, protected production secret files, pinned post-T15 images, off-host backup, optional paid provider, and open T12 validation, follow the [complete manual configuration procedure](manual-configuration.md). The source-only T15/T16 handover is tracked in [acceptance](acceptance.md).
