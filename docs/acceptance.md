@@ -23,7 +23,7 @@ This ledger maps all [source requirements](requirements.md) to actual artifacts.
 | R17 | Partial | [T12 raw before/after](t12-performance.md); targets still missed. |
 | R18 | Implemented | [README](../README.md), [architecture](architecture.md), [ADRs](adr/), [status](project-status.md). |
 | R19 | Implemented locally | [Fresh demo](demo.md), [development](development.md); current Docker engine unavailable. |
-| R20 | Implemented previously | [CI](https://github.com/supercodingDen/RepoScope/actions), lockfile, tests; current commit's CI pending. |
+| R20 | Implemented for source | [T15/T16 source CI](https://github.com/supercodingDen/RepoScope/actions/runs/36476597880) passed all four jobs at `4d2559636ff598241b73c50a7e609dd60200b425`; lockfile and tests remain reproducible. |
 | R21 | Implemented | [License](../LICENSE), [contribution](../CONTRIBUTING.md), [security](../SECURITY.md). |
 | R22 | Open | Repository and pre-release remain private; owner must enable public access and confirm green CI. |
 | R23 | Open | [Production configuration](deployment.md) and scripts exist; host HTTPS, persistence, off-host restore, rollback unexecuted. |
@@ -42,7 +42,7 @@ This ledger maps all [source requirements](requirements.md) to actual artifacts.
 | Item | Required value and proof | Current value |
 | --- | --- | --- |
 | GitHub publication | Signed-out source/release URLs, visibility date, ruleset, vulnerability reporting | Private pre-release only; open |
-| Source and CI | Exact deployed SHA and successful four-job Actions URL | Post-T15 SHA/CI to record |
+| Source and CI | Exact deployed SHA and successful four-job Actions URL | Source commit `4d2559636ff598241b73c50a7e609dd60200b425` passed [four-job CI](https://github.com/supercodingDen/RepoScope/actions/runs/36476597880); deployed SHA remains open |
 | Images | Application/PostgreSQL/NATS IDs, archive SHA-256, Caddy/Redis manifest digests | To record after reviewed build |
 | Host | Provider, region, CPU/RAM/SSD/OS/Docker, cost cap, date | Not selected |
 | Endpoint and security | DNS, HTTPS certificate/expiry, 80/443-only scan, 401 auth proof | Not configured |
