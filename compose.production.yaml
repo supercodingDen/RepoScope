@@ -85,7 +85,7 @@ services:
     cpus: 1.0
 
   redis:
-    image: redis:8.6.6-alpine@sha256:23a604374ece8069b34131faac7a1f05ae73c64280e46af1de844f29af2846d4
+    image: redis:8.10.1-alpine@sha256:ef216d85ec44f4fdf7c0e6df2d1757a4734ed32fbb278cabd3181b5a27353b79
     restart: unless-stopped
     command: [redis-server, --save, "", --appendonly, "no", --maxmemory, 64mb, --maxmemory-policy, allkeys-lru]
     networks: [backend]
