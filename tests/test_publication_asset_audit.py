@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.publication_asset_audit import extract_and_classify
+from scripts.publication_asset_audit import _validated_layer_path, extract_and_classify
 
 
 def _archive(
@@ -70,6 +70,13 @@ def test_unsafe_layer_path_blocks_extraction(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="Unsafe release layer path"):
         extract_and_classify(archive, report, tmp_path / "layers")
     assert not (tmp_path / "outside").exists()
+
+
+def test_internal_posix_colon_is_safe_but_drive_and_parent_paths_are_not() -> None:
+    assert _validated_layer_path("usr/share/example/a:b").as_posix() == "usr/share/example/a:b"
+    for name in ("C:/outside", "../outside", "/outside", "app\\outside"):
+        with pytest.raises(ValueError, match="Unsafe release layer path"):
+            _validated_layer_path(name)
 
 
 def test_layers_are_extracted_without_raw_findings(tmp_path: Path) -> None:

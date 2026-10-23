@@ -54,6 +54,26 @@ def _known_public_signing_key(blob: bytes, finding: dict[str, object]) -> bool:
     return bool(values) and all(value == _PYTHON_GPG_FINGERPRINT for value in values)
 
 
+def _validated_layer_path(name: str) -> PurePosixPath:
+    relative = PurePosixPath(name)
+    reason = ""
+    if not name:
+        reason = "empty"
+    elif name.startswith("/"):
+        reason = "absolute"
+    elif "\\" in name:
+        reason = "backslash"
+    elif re.match(r"^[A-Za-z]:", name):
+        reason = "drive"
+    elif ".." in relative.parts:
+        reason = "parent"
+    elif not relative.parts:
+        reason = "dot"
+    if reason:
+        raise ValueError(f"Unsafe release layer path ({reason})")
+    return relative
+
+
 def _extract_layer_files(destination: Path) -> None:
     """Stage regular files from every layer, including files later removed by whiteouts."""
     files_root = destination / "files"
@@ -66,23 +86,7 @@ def _extract_layer_files(destination: Path) -> None:
             for member in layer:
                 if not member.isfile():
                     continue
-                name = member.name
-                relative = PurePosixPath(name)
-                reason = ""
-                if not name:
-                    reason = "empty"
-                elif name.startswith("/"):
-                    reason = "absolute"
-                elif "\\" in name:
-                    reason = "backslash"
-                elif ":" in name:
-                    reason = "colon"
-                elif ".." in relative.parts:
-                    reason = "parent"
-                elif not relative.parts:
-                    reason = "dot"
-                if reason:
-                    raise ValueError(f"Unsafe release layer path ({reason})")
+                relative = _validated_layer_path(member.name)
                 file_count += 1
                 file_bytes += member.size
                 if file_count > _MAX_LAYER_FILES or file_bytes > _MAX_LAYER_BYTES:
