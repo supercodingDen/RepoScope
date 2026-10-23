@@ -14,12 +14,16 @@ from typing import IO
 _BLOB_NAME = re.compile(r"[0-9a-f]{64}")
 _MAX_LAYERS = 500
 _MAX_LAYER_BYTES = 8 * 1024**3
+# Public Python 3.12.14 release-signing key fingerprint from the pinned official image:
+# https://github.com/docker-library/python/blob/688a0b86bb44289df16a363e9f41d90514c1a5f9/3.12/slim-bookworm/Dockerfile
+_PYTHON_GPG_FINGERPRINT = b"7169605F62C751356D054A26A821E680E5FA6305"
 
 
 @dataclass(frozen=True)
 class ArchiveScanSummary:
     layer_count: int
     opaque_findings: int
+    public_signing_key_findings: int
 
 
 def _archive_kind(header: bytes) -> str | None:
@@ -36,6 +40,19 @@ def _copy_layer(source: IO[bytes], header: bytes, destination: Path) -> None:
         shutil.copyfileobj(source, output)
 
 
+def _known_public_signing_key(blob: bytes, finding: dict[str, object]) -> bool:
+    match_text = finding.get("Match")
+    if (
+        finding.get("RuleID") != "generic-api-key"
+        or finding.get("Secret") != "REDACTED"
+        or not isinstance(match_text, str)
+        or re.fullmatch(r'GPG_KEY=REDACTED["\s,}\]]*', match_text) is None
+    ):
+        return False
+    values = re.findall(rb"GPG_KEY=([A-Za-z0-9]+)", blob)
+    return bool(values) and all(value == _PYTHON_GPG_FINGERPRINT for value in values)
+
+
 def extract_and_classify(archive: Path, report: Path, destination: Path) -> ArchiveScanSummary:
     """Extract every layer and classify only raw matches on opaque layer blobs."""
     findings: object = json.loads(report.read_text(encoding="utf-8"))
@@ -44,6 +61,7 @@ def extract_and_classify(archive: Path, report: Path, destination: Path) -> Arch
     destination.mkdir(parents=True, exist_ok=False)
     layer_blobs: set[str] = set()
     blob_metadata: dict[str, tuple[str, int]] = {}
+    json_blobs: dict[str, bytes] = {}
     layer_count = 0
     layer_bytes = 0
     with tarfile.open(archive, mode="r:gz") as outer:
@@ -64,6 +82,8 @@ def extract_and_classify(archive: Path, report: Path, destination: Path) -> Arch
                     member.size,
                 )
                 if kind is None:
+                    if blob_metadata[name][0] == "json" and member.size <= 1024**2:
+                        json_blobs[name] = header + source.read()
                     continue
                 layer_count += 1
                 layer_bytes += member.size
@@ -83,11 +103,20 @@ def extract_and_classify(archive: Path, report: Path, destination: Path) -> Arch
             if match is not None:
                 redacted_keys.add(match.group(1))
     opaque_findings = 0
+    public_signing_key_findings = 0
     for finding in findings:
         if not isinstance(finding, dict) or not isinstance(finding.get("File"), str):
             raise ValueError("Invalid release scan finding")
         file_name = finding["File"]
         blob = file_name.rsplit("/", 1)[-1]
+        if (
+            archive.name in file_name
+            and f"blobs/sha256/{blob}" in file_name
+            and blob in json_blobs
+            and _known_public_signing_key(json_blobs[blob], finding)
+        ):
+            public_signing_key_findings += 1
+            continue
         if (
             archive.name not in file_name
             or f"blobs/sha256/{blob}" not in file_name
@@ -103,7 +132,7 @@ def extract_and_classify(archive: Path, report: Path, destination: Path) -> Arch
                 f"match_keys={','.join(sorted(redacted_keys)[:10]) or 'none'})"
             )
         opaque_findings += 1
-    return ArchiveScanSummary(layer_count, opaque_findings)
+    return ArchiveScanSummary(layer_count, opaque_findings, public_signing_key_findings)
 
 
 def main() -> int:
@@ -134,7 +163,8 @@ def main() -> int:
         return 1
     print(
         f"Prepared {summary.layer_count} Docker layers; "
-        f"{summary.opaque_findings} raw layer-byte matches require extracted-layer review."
+        f"{summary.opaque_findings} raw layer-byte matches require extracted-layer review; "
+        f"{summary.public_signing_key_findings} matches use the pinned public signing fingerprint."
     )
     return 0
 

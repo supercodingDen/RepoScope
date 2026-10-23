@@ -12,7 +12,7 @@ import pytest
 from scripts.publication_asset_audit import extract_and_classify
 
 
-def _archive(path: Path) -> tuple[str, str]:
+def _archive(path: Path, config: bytes = b'{"config": "public"}\n') -> tuple[str, str]:
     layer_digest = "a" * 64
     config_digest = "b" * 64
     layer_bytes = io.BytesIO()
@@ -24,7 +24,7 @@ def _archive(path: Path) -> tuple[str, str]:
     with tarfile.open(path, mode="w:gz") as outer:
         for digest, content in (
             (layer_digest, layer_bytes.getvalue()),
-            (config_digest, b'{"config": "public"}\n'),
+            (config_digest, config),
         ):
             member = tarfile.TarInfo(f"blobs/sha256/{digest}")
             member.size = len(content)
@@ -106,3 +106,41 @@ def test_failure_reports_only_the_redacted_key_name(tmp_path: Path) -> None:
         extract_and_classify(archive, report, tmp_path / "layers")
     assert "match_keys=GPG_KEY" in str(error.value)
     assert "REDACTED" not in str(error.value)
+
+
+@pytest.mark.parametrize(
+    "fingerprint,accepted",
+    [
+        ("7169605F62C751356D054A26A821E680E5FA6305", True),
+        ("0000000000000000000000000000000000000000", False),
+    ],
+)
+def test_only_known_public_signing_fingerprint_is_exempt(
+    tmp_path: Path, fingerprint: str, accepted: bool
+) -> None:
+    archive = tmp_path / "images.tar.gz"
+    _, digest = _archive(
+        archive,
+        json.dumps({"config": {"Env": [f"GPG_KEY={fingerprint}"]}}).encode("utf-8"),
+    )
+    report = tmp_path / "report.json"
+    report.write_text(
+        json.dumps(
+            [
+                {
+                    "RuleID": "generic-api-key",
+                    "File": f"{archive}/blobs/sha256/{digest}",
+                    "Secret": "REDACTED",
+                    "Match": 'GPG_KEY=REDACTED"',
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    if accepted:
+        summary = extract_and_classify(archive, report, tmp_path / "layers")
+        assert summary.public_signing_key_findings == 1
+    else:
+        with pytest.raises(ValueError, match="Unclassified release finding"):
+            extract_and_classify(archive, report, tmp_path / "layers")
