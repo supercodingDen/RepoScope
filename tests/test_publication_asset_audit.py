@@ -12,13 +12,15 @@ import pytest
 from scripts.publication_asset_audit import extract_and_classify
 
 
-def _archive(path: Path, config: bytes = b'{"config": "public"}\n') -> tuple[str, str]:
+def _archive(
+    path: Path, config: bytes = b'{"config": "public"}\n', inner_name: str = "app/notice.txt"
+) -> tuple[str, str]:
     layer_digest = "a" * 64
     config_digest = "b" * 64
     layer_bytes = io.BytesIO()
     with tarfile.open(fileobj=layer_bytes, mode="w") as layer:
         content = b"public fixture\n"
-        member = tarfile.TarInfo("app/notice.txt")
+        member = tarfile.TarInfo(inner_name)
         member.size = len(content)
         layer.addfile(member, io.BytesIO(content))
     with tarfile.open(path, mode="w:gz") as outer:
@@ -54,6 +56,20 @@ def test_extracts_layer_and_classifies_opaque_blob_match(tmp_path: Path) -> None
         notice = layer.extractfile("app/notice.txt")
         assert notice is not None
         assert notice.read() == b"public fixture\n"
+    assert (tmp_path / "layers" / "files" / "001" / "app" / "notice.txt").read_bytes() == (
+        b"public fixture\n"
+    )
+
+
+def test_unsafe_layer_path_blocks_extraction(tmp_path: Path) -> None:
+    archive = tmp_path / "images.tar.gz"
+    _archive(archive, inner_name="../../outside")
+    report = tmp_path / "report.json"
+    report.write_text("[]", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Unsafe release layer path"):
+        extract_and_classify(archive, report, tmp_path / "layers")
+    assert not (tmp_path / "outside").exists()
 
 
 def test_layers_are_extracted_without_raw_findings(tmp_path: Path) -> None:

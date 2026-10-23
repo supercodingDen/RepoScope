@@ -70,7 +70,7 @@ jobs:
           layer_status=0
           ./gitleaks dir --redact --no-banner --max-archive-depth=1 --exit-code=9 \
             --report-format json --report-path "$RUNNER_TEMP/gitleaks-layers.json" \
-            "$RUNNER_TEMP/release-layers" >"$RUNNER_TEMP/gitleaks-layers.log" 2>&1 || layer_status=$?
+            "$RUNNER_TEMP/release-layers/files" >"$RUNNER_TEMP/gitleaks-layers.log" 2>&1 || layer_status=$?
           if [ "$layer_status" -eq 0 ]; then
             echo 'Release text assets and extracted image layers found no recognized secrets.'
           elif [ "$layer_status" -eq 9 ]; then

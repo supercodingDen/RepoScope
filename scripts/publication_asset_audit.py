@@ -8,12 +8,13 @@ import re
 import shutil
 import tarfile
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import IO
 
 _BLOB_NAME = re.compile(r"[0-9a-f]{64}")
 _MAX_LAYERS = 500
 _MAX_LAYER_BYTES = 8 * 1024**3
+_MAX_LAYER_FILES = 250_000
 # Public Python 3.12.14 release-signing key fingerprint from the pinned official image:
 # https://github.com/docker-library/python/blob/688a0b86bb44289df16a363e9f41d90514c1a5f9/3.12/slim-bookworm/Dockerfile
 _PYTHON_GPG_FINGERPRINT = b"7169605F62C751356D054A26A821E680E5FA6305"
@@ -51,6 +52,42 @@ def _known_public_signing_key(blob: bytes, finding: dict[str, object]) -> bool:
         return False
     values = re.findall(rb"GPG_KEY=([A-Za-z0-9]+)", blob)
     return bool(values) and all(value == _PYTHON_GPG_FINGERPRINT for value in values)
+
+
+def _extract_layer_files(destination: Path) -> None:
+    """Stage regular files from every layer, including files later removed by whiteouts."""
+    files_root = destination / "files"
+    files_root.mkdir()
+    file_count = 0
+    file_bytes = 0
+    for layer_path in sorted(destination.glob("*.tar*")):
+        layer_root = files_root / layer_path.name.split(".", 1)[0]
+        with tarfile.open(layer_path, mode="r:*") as layer:
+            for member in layer:
+                if not member.isfile():
+                    continue
+                name = member.name
+                relative = PurePosixPath(name)
+                if (
+                    not name
+                    or name.startswith("/")
+                    or "\\" in name
+                    or ":" in name
+                    or ".." in relative.parts
+                    or not relative.parts
+                ):
+                    raise ValueError("Unsafe release layer path")
+                file_count += 1
+                file_bytes += member.size
+                if file_count > _MAX_LAYER_FILES or file_bytes > _MAX_LAYER_BYTES:
+                    raise ValueError("Release layer file limit exceeded")
+                source = layer.extractfile(member)
+                if source is None:
+                    raise ValueError("Unreadable release layer file")
+                target = layer_root.joinpath(*relative.parts)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with source, target.open("wb") as output:
+                    shutil.copyfileobj(source, output)
 
 
 def extract_and_classify(archive: Path, report: Path, destination: Path) -> ArchiveScanSummary:
@@ -93,6 +130,7 @@ def extract_and_classify(archive: Path, report: Path, destination: Path) -> Arch
                 layer_blobs.add(name)
     if layer_count == 0:
         raise ValueError("No Docker layers found")
+    _extract_layer_files(destination)
     redacted_keys: set[str] = set()
     for finding in findings:
         if not isinstance(finding, dict) or finding.get("Secret") != "REDACTED":
@@ -151,7 +189,10 @@ def main() -> int:
                 "Invalid release scan finding",
                 "Unreadable release layer",
                 "Release layer limit exceeded",
+                "Release layer file limit exceeded",
                 "No Docker layers found",
+                "Unsafe release layer path",
+                "Unreadable release layer file",
                 "Unclassified release finding",
             )
         ):
