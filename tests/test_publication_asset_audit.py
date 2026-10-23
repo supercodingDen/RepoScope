@@ -82,3 +82,27 @@ def test_other_raw_matches_remain_blocking(tmp_path: Path, kind: str) -> None:
 
     with pytest.raises(ValueError, match="Unclassified release finding"):
         extract_and_classify(archive, report, tmp_path / "layers")
+
+
+def test_failure_reports_only_the_redacted_key_name(tmp_path: Path) -> None:
+    archive = tmp_path / "images.tar.gz"
+    _, config_digest = _archive(archive)
+    report = tmp_path / "report.json"
+    report.write_text(
+        json.dumps(
+            [
+                {
+                    "RuleID": "generic-api-key",
+                    "File": f"{archive}/blobs/sha256/{config_digest}",
+                    "Secret": "REDACTED",
+                    "Match": 'GPG_KEY=REDACTED"',
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="Unclassified release finding") as error:
+        extract_and_classify(archive, report, tmp_path / "layers")
+    assert "match_keys=GPG_KEY" in str(error.value)
+    assert "REDACTED" not in str(error.value)

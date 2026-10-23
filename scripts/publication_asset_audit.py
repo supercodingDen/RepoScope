@@ -73,6 +73,15 @@ def extract_and_classify(archive: Path, report: Path, destination: Path) -> Arch
                 layer_blobs.add(name)
     if layer_count == 0:
         raise ValueError("No Docker layers found")
+    redacted_keys: set[str] = set()
+    for finding in findings:
+        if not isinstance(finding, dict) or finding.get("Secret") != "REDACTED":
+            continue
+        match_text = finding.get("Match")
+        if isinstance(match_text, str):
+            match = re.search(r"\b([A-Z][A-Z0-9_]{2,59})=REDACTED\b", match_text)
+            if match is not None:
+                redacted_keys.add(match.group(1))
     opaque_findings = 0
     for finding in findings:
         if not isinstance(finding, dict) or not isinstance(finding.get("File"), str):
@@ -90,7 +99,8 @@ def extract_and_classify(archive: Path, report: Path, destination: Path) -> Arch
                 f"blob_path={int(f'blobs/sha256/{blob}' in file_name)}, "
                 f"known_layer={int(blob in layer_blobs)}, "
                 f"blob_kind={blob_metadata.get(blob, ('missing', 0))[0]}, "
-                f"blob_bytes={blob_metadata.get(blob, ('missing', 0))[1]})"
+                f"blob_bytes={blob_metadata.get(blob, ('missing', 0))[1]}, "
+                f"match_keys={','.join(sorted(redacted_keys)[:10]) or 'none'})"
             )
         opaque_findings += 1
     return ArchiveScanSummary(layer_count, opaque_findings)
