@@ -25,7 +25,7 @@ This ledger maps all [source requirements](requirements.md) to actual artifacts.
 | R19 | Implemented locally | [Fresh demo](demo.md), [development](development.md); current Docker engine unavailable. |
 | R20 | Implemented for source | [T15/T16 source CI](https://github.com/supercodingDen/RepoScope/actions/runs/36476597880) passed all four jobs at `4d2559636ff598241b73c50a7e609dd60200b425`; lockfile and tests remain reproducible. |
 | R21 | Implemented | [License](../LICENSE), [contribution](../CONTRIBUTING.md), [security](../SECURITY.md). |
-| R22 | Open | Repository and pre-release remain private; owner must enable public access and confirm green CI. |
+| R22 | Open | Repository and pre-release remain private. Complete the [publication readiness gates](publication-readiness.md), owner-controlled protection/security settings, signed-out access checks, and final four-job CI before marking public access accepted. |
 | R23 | Open | [Production configuration](deployment.md) and scripts exist; host HTTPS, persistence, off-host restore, rollback unexecuted. |
 | R24 | Partial | [Local five-minute path](demo.md), [interview guide](interview-guide.md); hosted demonstration and final acceptance pending. |
 | R25 | Implemented locally | [Type policy](../AGENTS.md), strict mypy; rerun on final source. |
@@ -41,7 +41,7 @@ This ledger maps all [source requirements](requirements.md) to actual artifacts.
 
 | Item | Required value and proof | Current value |
 | --- | --- | --- |
-| GitHub publication | Signed-out source/release URLs, visibility date, ruleset, vulnerability reporting | Private pre-release only; open |
+| GitHub publication | Signed-out source/release/Actions URLs, visibility date, protected `main`, security settings, audited release assets | Private pre-release only; [publication readiness](publication-readiness.md) has open gates |
 | Source and CI | Exact deployed SHA and successful four-job Actions URL | Source commit `4d2559636ff598241b73c50a7e609dd60200b425` passed [four-job CI](https://github.com/supercodingDen/RepoScope/actions/runs/36476597880); deployed SHA remains open |
 | Images | Application/PostgreSQL/NATS IDs, archive SHA-256, Caddy/Redis manifest digests | To record after reviewed build |
 | Host | Provider, region, CPU/RAM/SSD/OS/Docker, cost cap, date | Not selected |

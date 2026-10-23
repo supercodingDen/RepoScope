@@ -3,6 +3,16 @@
 !.env.example
 *.pem
 *.key
+*.secret
+*.token
+**/secrets/
+production.env
+backup.env
+restic_password
+openai_api_key
+api_token
+postgres_password
+app_database_password
 .venv/
 __pycache__/
 *.py[cod]

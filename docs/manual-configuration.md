@@ -5,7 +5,7 @@ This checklist covers every remaining owner-controlled step. Follow it only on s
 ## 1. Finish GitHub ownership and public release (T14)
 
 1. Sign in as owner of [supercodingDen/RepoScope](https://github.com/supercodingDen/RepoScope). Review the current `main` commit, Actions runs, license, security notes, and `v0.1.0` pre-release assets/metadata. Deploy only an exact commit whose CI is green.
-2. To satisfy the PDF's public-submission gate, choose **Settings → General → Danger Zone → Change repository visibility → Public**. Review source, release assets, Actions history, and logs before changing visibility. Check both repository and release URLs in a signed-out browser afterward. Remaining private is allowed but leaves T14 open.
+2. Complete every pre-publication gate in the [public-repository readiness checklist](publication-readiness.md), including independent release-asset review and branch protection. Only after those gates pass, choose **Settings → General → Danger Zone → Change repository visibility → Public**. Check repository, history, release assets, and Actions in a signed-out browser afterward. Remaining private leaves T14 open.
 3. Under **Settings → Rules → Rulesets**, protect `main`: require pull-request review and the `quality` jobs (`python`, `containers`, `secrets`, `security`), block force pushes and deletion. Apply rules supported by your account plan. Once public, enable **Settings → Advanced Security → Private vulnerability reporting**, or retain the private contact in [SECURITY.md](../SECURITY.md). Record screenshots/links without secrets.
 
 ## 2. Run the existing local Windows demo (optional)

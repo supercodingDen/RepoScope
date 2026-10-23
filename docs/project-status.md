@@ -1,7 +1,15 @@
 # Project status
 
-Milestone: **T15/T16 source handover prepared; actual hosted/public and remaining T12 acceptance gates remain open**.
-Verification date: 2026-09-28 local source checks. Working project: `D:\RepoScope_project\reposcope`.
+Milestone: **T15/T16 source handover prepared; GitHub publication audit in progress; actual hosted/public and remaining T12 acceptance gates remain open**.
+Verification date: 2026-10-22 publication review; previous T15/T16 source checks: 2026-09-28. Working project: `D:\RepoScope_project\reposcope`.
+
+## Public-repository preparation and remaining gate
+
+- The existing GitHub repository remains **private**. [Publication readiness](publication-readiness.md) records a 13-branch tree audit, a redacted review of retrievable Actions logs, an in-memory inspection of the tracked benchmark ZIP, and the remaining historical and release-asset audit limits. The owner accepted that existing author email metadata will become public.
+- The source now rejects tracked credential paths and populated secret entries in `.env.example` during the `secrets` CI job, alongside redacted Gitleaks across fetched branch/tag history and current-tree archives. Additional ignore patterns cover operator secret files and directories. Future production API/provider tokens are to be mounted from protected host files outside the checkout, not committed to GitHub.
+- Publication is blocked until the large `v0.1.0` image archive and other release assets receive an independent review, the unavailable historical Actions log is checked, and a final full-reference redacted scan is complete. No attached Actions artifacts were found across 142 runs. GitHub branch protection, required `python`/`containers`/`secrets`/`security` checks, security settings, and visibility are owner-controlled UI actions unavailable through the current integration. Do not change visibility until these gates pass. No API host or container service is deployed.
+- The 11 open Dependabot pull requests remain unmerged pending individual review; a proposed Python 3.14 update conflicts with the supported `<3.14` range.
+- Local publication checks: 379 offline tests passed, 80 optional tests skipped; strict mypy passed 132 source files; Ruff lint and format passed; 48 contract exports, 20 schema/example pairs, two OpenAPI documents, and 58 Markdown local-link targets validated. A redacted Gitleaks scan of 299 allowlisted source/configuration files (1.50 MB) and a separate scan of the 20.92-MB uncompressed tracked benchmark archive found no leaks; the local `.env` was not opened or copied. These checks do not cover the private release's binary asset.
 
 ## T15/T16 source delivery and open acceptance
 
