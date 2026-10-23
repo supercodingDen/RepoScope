@@ -7,6 +7,8 @@ RUN apt-get update \
         perl=5.36.0-7+deb12u4 \
         libperl5.36=5.36.0-7+deb12u4 \
         perl-modules-5.36=5.36.0-7+deb12u4 \
-    && rm -rf /var/lib/apt/lists/* /usr/local/bin/gosu
+    && rm -rf /var/lib/apt/lists/* /usr/local/bin/gosu \
+        /etc/ssl/private/ssl-cert-snakeoil.key \
+        /etc/ssl/certs/ssl-cert-snakeoil.pem
 
 USER postgres

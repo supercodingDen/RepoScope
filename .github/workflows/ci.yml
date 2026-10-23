@@ -82,6 +82,8 @@ jobs:
           docker build -f Dockerfile.nats -t reposcope-nats:security .
           test "$(docker image inspect --format '{{.Config.User}}' reposcope-postgres:security)" = postgres
           test "$(docker image inspect --format '{{.Config.User}}' reposcope-nats:security)" = 10001:10001
+          docker run --rm --entrypoint sh reposcope-postgres:security -c \
+            'test ! -e /etc/ssl/private/ssl-cert-snakeoil.key && test ! -e /etc/ssl/certs/ssl-cert-snakeoil.pem'
       - name: Scan runtime and infrastructure images
         run: |
           ./trivy image --scanners vuln,secret --quiet --format json --output runtime-scan.json reposcope:security
