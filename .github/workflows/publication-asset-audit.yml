@@ -88,10 +88,21 @@ jobs:
               if not isinstance(rule, str) or re.fullmatch(r"[a-z0-9-]{1,60}", rule) is None:
                   rule = "unknown"
               match_text = finding.get("Match", "") if finding.get("Secret") == "REDACTED" else ""
-              match = re.search(r"\b([A-Z][A-Z0-9_]{2,59})=REDACTED\b", match_text)
-              counts[(rule, match.group(1) if match else "unknown")] += 1
-          for (rule, key), count in sorted(counts.items()):
-              print(f"Extracted layer finding: rule={rule}, key={key}, count={count}")
+              match = re.search(r"\b([A-Za-z][A-Za-z0-9_]{2,59})\s*[:=]\s*REDACTED\b", match_text)
+              file_name = finding.get("File", "")
+              location = (
+                  "dependency" if "/app/.venv/" in file_name else
+                  "system" if "/usr/" in file_name else
+                  "application" if "/app/" in file_name else "other"
+              )
+              parts = [part for part in re.split(r"[/\\!]+", file_name) if part]
+              safe_tail = "/".join(
+                  part if re.fullmatch(r"[A-Za-z0-9_.-]{1,80}", part) else "masked"
+                  for part in parts[-4:]
+              ) if location in ("dependency", "system") else "restricted"
+              counts[(rule, match.group(1) if match else "unknown", location, safe_tail)] += 1
+          for (rule, key, location, tail), count in sorted(counts.items()):
+              print(f"Extracted finding: rule={rule}, key={key}, location={location}, tail={tail}, count={count}")
           PY
             echo 'Extracted release layer scan found potential secrets; publication remains blocked.' >&2
             exit 1
