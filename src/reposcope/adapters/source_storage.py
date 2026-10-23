@@ -110,6 +110,15 @@ class SourceStore:
                                 item.chmod(info.st_mode | stat.S_IWRITE)
                         except FileNotFoundError:
                             continue
+                        except SourceRejected:
+                            # A concurrent remover can unlink a file after stat returns
+                            # (Windows may report zero links). Still reject any entry
+                            # that remains, including a broken symlink or hard link.
+                            try:
+                                item.stat(follow_symlinks=False)
+                            except FileNotFoundError:
+                                continue
+                            raise
                 shutil.rmtree(path)
                 return
             except FileNotFoundError:

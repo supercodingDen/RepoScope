@@ -12,16 +12,32 @@
     "source": "https://hub.docker.com/v2/repositories/library/python/tags/3.12.14-slim-bookworm"
   },
   {
-    "image": "nats:2.14.7-alpine",
-    "digest": "sha256:4063edae0717ba5f7501bfde75f97fd9b57f5b93597b92c70b6a6fbbf6a74e06",
+    "image": "nats:2.15.1-alpine",
+    "digest": "sha256:7ae34c25dfd6fe2e01c6483eabef20d796690fdcac6c4d94ca780a6cf9877fde",
     "platforms": [
       "amd64",
       "ppc64le",
-      "arm",
+      "arm/v6",
+      "arm/v7",
       "arm64",
-      "arm"
+      "s390x"
     ],
-    "source": "https://hub.docker.com/v2/repositories/library/nats/tags/2.14.7-alpine"
+    "source": "https://hub.docker.com/v2/repositories/library/nats/tags/2.15.1-alpine"
+  },
+  {
+    "image": "golang:1.27.3-alpine",
+    "digest": "sha256:b8c9b82affbbb82a020bbcf998dad2ba9516944ac7e883524642a481a9505e9c",
+    "platforms": [
+      "386",
+      "amd64",
+      "arm/v6",
+      "arm/v7",
+      "arm64",
+      "ppc64le",
+      "riscv64",
+      "s390x"
+    ],
+    "source": "https://hub.docker.com/v2/repositories/library/golang/tags/1.27.3-alpine"
   },
   {
     "image": "redis:8.6.6-alpine",

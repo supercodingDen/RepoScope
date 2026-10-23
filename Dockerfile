@@ -1,9 +1,11 @@
 FROM python:3.12.14-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e AS source-tools
 ARG GIT_DEBIAN_VERSION=1:2.39.5-0+deb12u3
 ARG CA_CERTIFICATES_DEBIAN_VERSION=20250419~deb12u1
+ARG PCRE2_DEBIAN_VERSION=10.42-1+deb12u2
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         git=${GIT_DEBIAN_VERSION} ca-certificates=${CA_CERTIFICATES_DEBIAN_VERSION} \
+        libpcre2-8-0=${PCRE2_DEBIAN_VERSION} \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /var/lib/reposcope/sources \
     && chown 10001:10001 /var/lib/reposcope/sources

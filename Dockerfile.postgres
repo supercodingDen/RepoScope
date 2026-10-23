@@ -1,7 +1,12 @@
 FROM pgvector/pgvector:0.8.6-pg17-bookworm@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpcre2-8-0=10.42-1+deb12u2 \
+    && apt-get install -y --no-install-recommends \
+        libpcre2-8-0=10.42-1+deb12u2 \
+        perl-base=5.36.0-7+deb12u4 \
+        perl=5.36.0-7+deb12u4 \
+        libperl5.36=5.36.0-7+deb12u4 \
+        perl-modules-5.36=5.36.0-7+deb12u4 \
     && rm -rf /var/lib/apt/lists/* /usr/local/bin/gosu
 
 USER postgres

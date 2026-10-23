@@ -218,6 +218,19 @@ def test_concurrent_cleanup_is_idempotent(tmp_path: Path) -> None:
     assert not attempt.exists()
 
 
+def test_cleanup_rejects_persistent_hardlink(tmp_path: Path) -> None:
+    store = SourceStore(tmp_path / "store")
+    attempt = store.attempt(uuid4(), 1)
+    outside = tmp_path / "outside"
+    outside.write_bytes(b"retain")
+    (attempt / "linked").hardlink_to(outside)
+
+    with pytest.raises(SourceRejected, match="SOURCE_LINK_REJECTED"):
+        store.cleanup(attempt)
+    assert outside.read_bytes() == b"retain"
+    assert (attempt / "linked").exists()
+
+
 def test_validation_checks_cancellation_between_hashes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
