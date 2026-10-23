@@ -1,0 +1,71 @@
+name: publication-asset-audit
+on:
+  push:
+    paths:
+      - .github/workflows/publication-asset-audit.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  release-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Download and verify the six immutable-by-digest release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/release-assets"
+          gh release download v0.1.0 --repo "$GITHUB_REPOSITORY" --dir "$RUNNER_TEMP/release-assets" >/dev/null
+          cd "$RUNNER_TEMP/release-assets"
+          test "$(find . -maxdepth 1 -type f | wc -l)" -eq 6
+          printf '%s\n' \
+            '614e66851b2ca93d4e84249300c1b0f4dc96aa1dab147161aa36bec4ce5addf9  release-metadata.json' \
+            '63c647270fd772c04718d3b9a4f4b860a4b06c077ff02a8b73f8bc1f31e337b7  reposcope-nats-v0.1.0-sbom.cdx.json' \
+            'c290a052a1c68ec388d9e2a8a57ea16e3acfff7db0554796003286537bb24ea3  reposcope-postgres-v0.1.0-sbom.cdx.json' \
+            'dcd0b716bc64083423c6e51e0704963b720215abed4ec36ac81520920b6bc453  reposcope-v0.1.0-images.tar.gz' \
+            '7ec21bb5639800a2d63fcb88e881285f022949e8dd9bc9239a331717d49fbc90  reposcope-v0.1.0-sbom.cdx.json' \
+            '06f973d7341c87db455f780cb8a4a575ef185f28cd9d26653b41df45767e97f3  SHA256SUMS' \
+            | sha256sum --check --status
+          sha256sum --check --status SHA256SUMS
+          jq -e --arg source '0f97114e983fda541000c16531b22aeab3113dc2' \
+            --arg archive 'dcd0b716bc64083423c6e51e0704963b720215abed4ec36ac81520920b6bc453' \
+            '.version == "v0.1.0" and .source_commit == $source and .image_archive_sha256 == $archive' \
+            release-metadata.json >/dev/null
+          echo 'All six release assets match their recorded hashes and source metadata.'
+      - name: Install checksum-verified scanners
+        run: |
+          set -euo pipefail
+          curl -fsSLO https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          curl -fsSLO https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_checksums.txt
+          grep '  gitleaks_8.30.1_linux_x64.tar.gz$' gitleaks_8.30.1_checksums.txt | sha256sum --check
+          tar -xzf gitleaks_8.30.1_linux_x64.tar.gz gitleaks
+          curl -fsSLo trivy.tar.gz https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.74.0_Linux-64bit.tar.gz
+          echo '2ae6fe3ee734b7fdf11335663e18c75ea12dccc76062f09f164a3b0f8be4371a  trivy.tar.gz' | sha256sum --check
+          tar -xzf trivy.tar.gz trivy
+      - name: Scan archived bytes without disclosing findings in logs
+        run: |
+          set -euo pipefail
+          if ./gitleaks dir --redact --no-banner --max-archive-depth=4 \
+            "$RUNNER_TEMP/release-assets" >"$RUNNER_TEMP/gitleaks-audit.log" 2>&1; then
+            echo 'Release asset archive and text scan found no recognized secrets.'
+          else
+            echo 'Release asset scan failed or found a secret; publication remains blocked.' >&2
+            exit 1
+          fi
+      - name: Load and independently scan all three release images
+        run: |
+          set -euo pipefail
+          gzip -dc "$RUNNER_TEMP/release-assets/reposcope-v0.1.0-images.tar.gz" \
+            | docker load >"$RUNNER_TEMP/docker-load.log"
+          for name in reposcope reposcope-postgres reposcope-nats; do
+            docker image inspect "$name:v0.1.0" >/dev/null
+            ./trivy image --scanners secret --quiet --format json \
+              --output "$RUNNER_TEMP/$name-secret-scan.json" "$name:v0.1.0"
+            python scripts/security_report.py "$RUNNER_TEMP/$name-secret-scan.json" --label "$name release asset"
+          done
