@@ -67,11 +67,36 @@ jobs:
           python scripts/publication_asset_audit.py \
             "$RUNNER_TEMP/release-assets/reposcope-v0.1.0-images.tar.gz" \
             "$RUNNER_TEMP/gitleaks-audit.json" "$RUNNER_TEMP/release-layers"
-          if ./gitleaks dir --redact --no-banner --max-archive-depth=1 \
-            "$RUNNER_TEMP/release-layers" >"$RUNNER_TEMP/gitleaks-layers.log" 2>&1; then
+          layer_status=0
+          ./gitleaks dir --redact --no-banner --max-archive-depth=1 --exit-code=9 \
+            --report-format json --report-path "$RUNNER_TEMP/gitleaks-layers.json" \
+            "$RUNNER_TEMP/release-layers" >"$RUNNER_TEMP/gitleaks-layers.log" 2>&1 || layer_status=$?
+          if [ "$layer_status" -eq 0 ]; then
             echo 'Release text assets and extracted image layers found no recognized secrets.'
+          elif [ "$layer_status" -eq 9 ]; then
+            python - "$RUNNER_TEMP/gitleaks-layers.json" <<'PY'
+          import collections
+          import json
+          import re
+          import sys
+
+          with open(sys.argv[1], encoding="utf-8") as stream:
+              findings = json.load(stream)
+          counts = collections.Counter()
+          for finding in findings:
+              rule = finding.get("RuleID", "unknown")
+              if not isinstance(rule, str) or re.fullmatch(r"[a-z0-9-]{1,60}", rule) is None:
+                  rule = "unknown"
+              match_text = finding.get("Match", "") if finding.get("Secret") == "REDACTED" else ""
+              match = re.search(r"\b([A-Z][A-Z0-9_]{2,59})=REDACTED\b", match_text)
+              counts[(rule, match.group(1) if match else "unknown")] += 1
+          for (rule, key), count in sorted(counts.items()):
+              print(f"Extracted layer finding: rule={rule}, key={key}, count={count}")
+          PY
+            echo 'Extracted release layer scan found potential secrets; publication remains blocked.' >&2
+            exit 1
           else
-            echo 'Extracted release layer scan failed or found a potential secret; publication remains blocked.' >&2
+            echo "Extracted release layer scanner failed with exit code $layer_status." >&2
             exit 1
           fi
       - name: Load and independently scan all three release images
