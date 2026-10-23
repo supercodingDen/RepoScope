@@ -79,7 +79,12 @@ def extract_and_classify(archive: Path, report: Path, destination: Path) -> Arch
             or f"blobs/sha256/{blob}" not in file_name
             or blob not in layer_blobs
         ):
-            raise ValueError("Unclassified release finding")
+            raise ValueError(
+                "Unclassified release finding "
+                f"(archive={int(archive.name in file_name)}, "
+                f"blob_path={int(f'blobs/sha256/{blob}' in file_name)}, "
+                f"known_layer={int(blob in layer_blobs)})"
+            )
         opaque_findings += 1
     return ArchiveScanSummary(layer_count, opaque_findings)
 
@@ -92,8 +97,23 @@ def main() -> int:
     args = parser.parse_args()
     try:
         summary = extract_and_classify(args.archive, args.report, args.destination)
-    except (OSError, ValueError, tarfile.TarError, json.JSONDecodeError):
-        print("Release archive classification failed; publication remains blocked.")
+    except ValueError as error:
+        reason = str(error)
+        if not reason.startswith(
+            (
+                "Invalid release scan report",
+                "Invalid release scan finding",
+                "Unreadable release layer",
+                "Release layer limit exceeded",
+                "No Docker layers found",
+                "Unclassified release finding",
+            )
+        ):
+            reason = "invalid archive data"
+        print(f"Release archive classification failed ({reason}); publication remains blocked.")
+        return 1
+    except (OSError, tarfile.TarError, json.JSONDecodeError):
+        print("Release archive classification failed (I/O error); publication remains blocked.")
         return 1
     print(
         f"Prepared {summary.layer_count} Docker layers; "

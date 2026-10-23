@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - .github/workflows/publication-asset-audit.yml
+      - scripts/publication_asset_audit.py
   workflow_dispatch:
 permissions:
   contents: read
