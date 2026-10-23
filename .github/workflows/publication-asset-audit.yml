@@ -58,7 +58,7 @@ jobs:
           if [ "$status" -eq 0 ]; then
             echo 'Release asset archive and text scan found no recognized secrets.'
           elif [ "$status" -eq 9 ]; then
-            jq -c '[.[].RuleID] | group_by(.) | map({rule: .[0], count: length})' \
+            jq -c '[.[] | {rule: .RuleID, asset: (if (.File | contains("reposcope-v0.1.0-images.tar.gz")) then "image archive" elif (.File | contains("sbom.cdx.json")) then "SBOM" else "other asset" end), file_basename: (.File | split("/") | last), line: .StartLine}]' \
               "$RUNNER_TEMP/gitleaks-audit.json"
             echo 'Release asset scanner found potential secrets; publication remains blocked.' >&2
             exit 1
@@ -67,6 +67,7 @@ jobs:
             exit 1
           fi
       - name: Load and independently scan all three release images
+        if: ${{ always() }}
         run: |
           set -euo pipefail
           gzip -dc "$RUNNER_TEMP/release-assets/reposcope-v0.1.0-images.tar.gz" \
