@@ -68,15 +68,21 @@ def _extract_layer_files(destination: Path) -> None:
                     continue
                 name = member.name
                 relative = PurePosixPath(name)
-                if (
-                    not name
-                    or name.startswith("/")
-                    or "\\" in name
-                    or ":" in name
-                    or ".." in relative.parts
-                    or not relative.parts
-                ):
-                    raise ValueError("Unsafe release layer path")
+                reason = ""
+                if not name:
+                    reason = "empty"
+                elif name.startswith("/"):
+                    reason = "absolute"
+                elif "\\" in name:
+                    reason = "backslash"
+                elif ":" in name:
+                    reason = "colon"
+                elif ".." in relative.parts:
+                    reason = "parent"
+                elif not relative.parts:
+                    reason = "dot"
+                if reason:
+                    raise ValueError(f"Unsafe release layer path ({reason})")
                 file_count += 1
                 file_bytes += member.size
                 if file_count > _MAX_LAYER_FILES or file_bytes > _MAX_LAYER_BYTES:
