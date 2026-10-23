@@ -51,11 +51,19 @@ jobs:
       - name: Scan archived bytes without disclosing findings in logs
         run: |
           set -euo pipefail
-          if ./gitleaks dir --redact --no-banner --max-archive-depth=4 \
-            "$RUNNER_TEMP/release-assets" >"$RUNNER_TEMP/gitleaks-audit.log" 2>&1; then
+          status=0
+          ./gitleaks dir --redact --no-banner --max-archive-depth=4 --exit-code=9 \
+            --report-format json --report-path "$RUNNER_TEMP/gitleaks-audit.json" \
+            "$RUNNER_TEMP/release-assets" >"$RUNNER_TEMP/gitleaks-audit.log" 2>&1 || status=$?
+          if [ "$status" -eq 0 ]; then
             echo 'Release asset archive and text scan found no recognized secrets.'
+          elif [ "$status" -eq 9 ]; then
+            jq -c '[.[].RuleID] | group_by(.) | map({rule: .[0], count: length})' \
+              "$RUNNER_TEMP/gitleaks-audit.json"
+            echo 'Release asset scanner found potential secrets; publication remains blocked.' >&2
+            exit 1
           else
-            echo 'Release asset scan failed or found a secret; publication remains blocked.' >&2
+            echo "Release asset scanner failed with exit code $status; publication remains blocked." >&2
             exit 1
           fi
       - name: Load and independently scan all three release images
