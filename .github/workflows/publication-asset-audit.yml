@@ -98,8 +98,8 @@ jobs:
               parts = [part for part in re.split(r"[/\\!]+", file_name) if part]
               safe_tail = "/".join(
                   part if re.fullmatch(r"[A-Za-z0-9_.-]{1,80}", part) else "masked"
-                  for part in parts[-4:]
-              ) if location in ("dependency", "system") else "restricted"
+                  for part in parts[-(4 if location in ("dependency", "system") else 3):]
+              )
               counts[(rule, match.group(1) if match else "unknown", location, safe_tail)] += 1
           for (rule, key, location, tail), count in sorted(counts.items()):
               print(f"Extracted finding: rule={rule}, key={key}, location={location}, tail={tail}, count={count}")
