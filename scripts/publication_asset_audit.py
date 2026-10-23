@@ -43,6 +43,7 @@ def extract_and_classify(archive: Path, report: Path, destination: Path) -> Arch
         raise ValueError("Invalid release scan report")
     destination.mkdir(parents=True, exist_ok=False)
     layer_blobs: set[str] = set()
+    blob_metadata: dict[str, tuple[str, int]] = {}
     layer_count = 0
     layer_bytes = 0
     with tarfile.open(archive, mode="r:gz") as outer:
@@ -58,6 +59,10 @@ def extract_and_classify(archive: Path, report: Path, destination: Path) -> Arch
             with source:
                 header = source.read(512)
                 kind = _archive_kind(header)
+                blob_metadata[name] = (
+                    kind or ("json" if header.lstrip().startswith((b"{", b"[")) else "other"),
+                    member.size,
+                )
                 if kind is None:
                     continue
                 layer_count += 1
@@ -83,7 +88,9 @@ def extract_and_classify(archive: Path, report: Path, destination: Path) -> Arch
                 "Unclassified release finding "
                 f"(archive={int(archive.name in file_name)}, "
                 f"blob_path={int(f'blobs/sha256/{blob}' in file_name)}, "
-                f"known_layer={int(blob in layer_blobs)})"
+                f"known_layer={int(blob in layer_blobs)}, "
+                f"blob_kind={blob_metadata.get(blob, ('missing', 0))[0]}, "
+                f"blob_bytes={blob_metadata.get(blob, ('missing', 0))[1]})"
             )
         opaque_findings += 1
     return ArchiveScanSummary(layer_count, opaque_findings)
