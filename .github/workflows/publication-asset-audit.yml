@@ -55,15 +55,22 @@ jobs:
           ./gitleaks dir --redact --no-banner --max-archive-depth=4 --exit-code=9 \
             --report-format json --report-path "$RUNNER_TEMP/gitleaks-audit.json" \
             "$RUNNER_TEMP/release-assets" >"$RUNNER_TEMP/gitleaks-audit.log" 2>&1 || status=$?
-          if [ "$status" -eq 0 ]; then
-            echo 'Release asset archive and text scan found no recognized secrets.'
-          elif [ "$status" -eq 9 ]; then
-            jq -c '[.[] | {rule: .RuleID, asset: (if (.File | contains("reposcope-v0.1.0-images.tar.gz")) then "image archive" elif (.File | contains("sbom.cdx.json")) then "SBOM" else "other asset" end), file_basename: (.File | split("/") | last), line: .StartLine}]' \
-              "$RUNNER_TEMP/gitleaks-audit.json"
-            echo 'Release asset scanner found potential secrets; publication remains blocked.' >&2
-            exit 1
-          else
+          if [ "$status" -ne 0 ] && [ "$status" -ne 9 ]; then
             echo "Release asset scanner failed with exit code $status; publication remains blocked." >&2
+            exit 1
+          fi
+          if [ ! -f "$RUNNER_TEMP/gitleaks-audit.json" ]; then
+            test "$status" -eq 0
+            printf '[]\n' >"$RUNNER_TEMP/gitleaks-audit.json"
+          fi
+          python scripts/publication_asset_audit.py \
+            "$RUNNER_TEMP/release-assets/reposcope-v0.1.0-images.tar.gz" \
+            "$RUNNER_TEMP/gitleaks-audit.json" "$RUNNER_TEMP/release-layers"
+          if ./gitleaks dir --redact --no-banner --max-archive-depth=1 \
+            "$RUNNER_TEMP/release-layers" >"$RUNNER_TEMP/gitleaks-layers.log" 2>&1; then
+            echo 'Release text assets and extracted image layers found no recognized secrets.'
+          else
+            echo 'Extracted release layer scan failed or found a potential secret; publication remains blocked.' >&2
             exit 1
           fi
       - name: Load and independently scan all three release images
