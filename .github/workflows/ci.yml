@@ -45,6 +45,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Reject tracked secret paths and populated template values
         run: python scripts/publication_guard.py
       - name: Install and verify Gitleaks
@@ -56,7 +57,9 @@ jobs:
       - name: Scan all fetched references and current archives
         run: |
           ./gitleaks git --redact --no-banner --log-opts='--all' .
-          ./gitleaks dir --redact --no-banner --max-archive-depth=1 .
+          mkdir -p "$RUNNER_TEMP/reposcope-source-scan"
+          git ls-files -z | tar --null -T - -cf - | tar -xf - -C "$RUNNER_TEMP/reposcope-source-scan"
+          ./gitleaks dir --redact --no-banner --max-archive-depth=1 "$RUNNER_TEMP/reposcope-source-scan"
 
   security:
     runs-on: ubuntu-latest
