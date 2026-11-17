@@ -4,7 +4,7 @@ RepoScope's English-language evidence workspace lets a hiring reviewer inspect t
 
 ## Entry points
 
-- [Interactive demo](https://supercodingDen.github.io/RepoScope/) — requires the successful Pages deployment described below.
+- [Interactive demo](https://supercodingDen.github.io/RepoScope/) — published and anonymously verified on 2026-11-17; see [acceptance evidence](verification/2026-11-17-demo-public.json).
 - [Desktop screenshot](assets/demo-desktop.png), [mobile screenshot](assets/demo-mobile.png), and [evaluation screenshot](assets/demo-evaluation.png).
 - [Short recorded walkthrough](assets/demo-walkthrough.webm).
 - [Validated recording](../web/demo/public/recordings/demo.json) and [ItsDangerous source license](../web/demo/public/recordings/LICENSE.itsdangerous.txt).
