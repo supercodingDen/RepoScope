@@ -22,7 +22,7 @@ Playback uses an 800 ms presentation interval so that each event can be inspecte
 
 ## Frontend development
 
-Use Node.js 24.22.1 and npm. From `web/demo`, run:
+Use Node.js 24.22.1 and npm 12.2.2. The lockfile includes cross-platform optional build dependencies. From `web/demo`, run:
 
 ```text
 npm ci --ignore-scripts
