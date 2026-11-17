@@ -26,6 +26,7 @@ COPY packages ./packages
 COPY src ./src
 COPY scripts ./scripts
 COPY tests ./tests
+COPY web/demo/public/recordings ./web/demo/public/recordings
 ENV PATH="/app/.venv/bin:$PATH" PYTHONPATH="/app/src:/app" PYTHONDONTWRITEBYTECODE=1
 CMD ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider"]
 

@@ -1,6 +1,8 @@
 # Five-minute local demo
 
-This path demonstrates durable import, a read-only agent run, SSE replay, and immutable citations with **mock** embeddings and a mock agent. It is not a semantic-quality evaluation. The small public [ItsDangerous repository](https://github.com/pallets/itsdangerous) is pinned to commit `672971d66a2ef9f85151e53283113f33d642dabd`, the same revision recorded in [the source manifest](../bench/data/repositories.json). Its source is downloaded during the demo; no imported code is executed or redistributed here.
+For a no-install visual walkthrough, see the [interactive recorded demo](interactive-demo.md). It presents captured mock-provider responses; the steps below run the actual backend locally.
+
+This path demonstrates durable import, a read-only agent run, SSE replay, and immutable citations with **mock** embeddings and a mock agent. It is not a semantic-quality evaluation. The small public [ItsDangerous repository](https://github.com/pallets/itsdangerous) is pinned to commit `672971d66a2ef9f85151e53283113f33d642dabd`, the same revision recorded in [the source manifest](../bench/data/repositories.json). Its source is downloaded during the local demo and never executed. The separate static recording redistributes bounded excerpts with the [upstream license](../web/demo/public/recordings/LICENSE.itsdangerous.txt); the full downloaded corpus and vectors are not included.
 
 ## Prepare once
 

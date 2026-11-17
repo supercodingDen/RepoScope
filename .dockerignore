@@ -22,3 +22,8 @@ api_token
 postgres_password
 app_database_password
 *.zip
+**/node_modules/
+web/demo/dist/
+web/demo/test-results/
+web/demo/playwright-report/
+docs/assets/

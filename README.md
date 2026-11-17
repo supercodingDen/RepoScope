@@ -2,7 +2,15 @@
 
 RepoScope indexes a public GitHub repository at a pinned commit, lets you search its code, and answers questions with file and line citations. It is a single-host, event-driven demonstration of durable jobs and bounded, read-only agent work. The default providers are deterministic mocks, so a local demo requires no model account and makes no paid calls. Mock answers do not establish semantic answer quality.
 
-**Current milestone: T15/T16 source handover; public-repository and hosted acceptance remain open.** The source is synchronized to the owner's [private GitHub repository](https://github.com/supercodingDen/RepoScope). A private `v0.1.0` pre-release exists with three historical SBOMs; its image archive was withdrawn after an upstream test private key was found in a PostgreSQL layer. The [public-repository readiness checklist](docs/publication-readiness.md) records the remaining security audit and owner-controlled GitHub settings. The [production configuration](docs/deployment.md), [complete owner setup procedure](docs/manual-configuration.md), and [acceptance ledger](docs/acceptance.md) are prepared, but no public HTTPS deployment or restore/rollback proof exists. The T12 scale study measured 100,029 real source chunks, while its 32-client search p95 target remains open. Read the [current status](docs/project-status.md) before treating a benchmark target as passed.
+## Interactive demo
+
+[Explore the recorded demo](https://supercodingDen.github.io/RepoScope/) · [Watch the short walkthrough](docs/assets/demo-walkthrough.webm) · [Run the backend locally](docs/demo.md)
+
+![RepoScope evidence workspace: recorded queries, ranked code snippets, pinned citations, and persisted tool events](docs/assets/demo-desktop.png)
+
+Inspect three captured cases: source lookup, path-scoped search, and SSE reconnect with no repeated events. Switch between the evidence workspace, architecture, measured benchmarks, and reproduction instructions. **This is an interactive recording with mock embeddings and a mock agent, not a live model.** Every event and citation comes from the pinned public-source capture. See the [demo guide](docs/interactive-demo.md) for provenance and Pages activation if the public demo is not yet available.
+
+**Current milestone: T15/T16 source handover plus recorded portfolio demo.** The existing [GitHub repository](https://github.com/supercodingDen/RepoScope) is public, and `main` reports protected. The `v0.1.0` pre-release retains three historical SBOMs; its image archive was withdrawn after an upstream test private key was found in a PostgreSQL layer. The [publication checklist](docs/publication-readiness.md) retains the audit and owner-controlled security settings. The [production configuration](docs/deployment.md), [owner setup procedure](docs/manual-configuration.md), and [acceptance ledger](docs/acceptance.md) are prepared, but the API has no hosted HTTPS endpoint or restore/rollback proof. Publishing the static demo does not deploy the backend. The T12 study measured 100,029 real source chunks; its 32-client search p95 target remains open. Read the [current status](docs/project-status.md) before treating a benchmark target as passed.
 
 ## Five-minute local path
 
