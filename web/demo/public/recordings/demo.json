@@ -1,0 +1,676 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-11-17T07:05:37.647879Z",
+  "application_commit": "a856be4e0db793d6118391d65b2236e853ff3c62",
+  "repository_url": "https://github.com/pallets/itsdangerous",
+  "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+  "provider_mode": "mock",
+  "cases": [
+    {
+      "id": "lookup",
+      "title": "Find an implementation",
+      "question": "unsign",
+      "path_prefix": null,
+      "search": {
+        "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+        "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+        "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+        "results": [
+          {
+            "chunk_id": "0399bdf8-fdb3-534e-b094-41ce36d06137",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 201,
+            "end_line": 266,
+            "score": 0.025,
+            "content": "alt + secret_key).digest())\n        elif self.key_derivation == \"django-concat\":\n            return t.cast(\n                bytes, self.digest_method(self.salt + b\"signer\" + secret_key).digest()\n            )\n        elif self.key_derivation == \"hmac\":\n            mac = hmac.new(secret_key, digestmod=self.digest_method)\n            mac.update(self.salt)\n            return mac.digest()\n        elif self.key_derivation == \"none\":\n            return secret_key\n        else:\n            raise TypeError(\"Unknown key derivation method\")\n\n    def get_signature(self, value: str | bytes) -> bytes:\n        \"\"\"Returns the signature for the given value.\"\"\"\n        value = want_bytes(value)\n        key = self.derive_key()\n        sig = self.algorithm.get_signature(key, value)\n        return base64_encode(sig)\n\n    def sign(self, value: str | bytes) -> bytes:\n        \"\"\"Signs the given string.\"\"\"\n        value = want_bytes(value)\n        return value + self.sep + self.get_signature(value)\n\n    def verify_signature(self, value: str | bytes, sig: str | bytes) -> bool:\n        \"\"\"Verifies the signature for the given value.\"\"\"\n        try:\n            sig = base64_decode(sig)\n        except Exception:\n            return False\n\n        value = want_bytes(value)\n\n        for secret_key in reversed(self.secret_keys):\n            key = self.derive_key(secret_key)\n\n            if self.algorithm.verify_signature(key, value, sig):\n                return True\n\n        return False\n\n    def unsign(self, signed_value: str | bytes) -> bytes:\n        \"\"\"Unsigns the given string.\"\"\"\n        signed_value = want_bytes(signed_value)\n\n        if self.sep not in signed_value:\n            raise BadSignature(f\"No {self.sep!r} found in value\")\n\n        value, sig = signed_value.rsplit(self.sep, 1)\n\n        if self.verify_signature(value, sig):\n            return value\n\n        raise BadSignature(f\"Signature {sig!r} does not match\", payload=value)\n\n    def validate(self, signed_value: str | bytes) -> bool:\n        \"\"\"Only validates the given signed value. Returns ``True`` if\n        the signature exists and is valid.\n        \"\"\"\n        try:\n            self.unsign(signed_value)\n            return True\n        except BadSignature:\n            return False\n"
+          },
+          {
+            "chunk_id": "d9884444-bd3a-5c06-bced-c6e9b6fe9b26",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 12,
+            "end_line": 28,
+            "score": 0.01639344262295082,
+            "content": "\n\n\nclass SigningAlgorithm:\n    \"\"\"Subclasses must implement :meth:`get_signature` to provide\n    signature generation functionality.\n    \"\"\"\n\n    def get_signature(self, key: bytes, value: bytes) -> bytes:\n        \"\"\"Returns the signature for the given key and value.\"\"\"\n        raise NotImplementedError()\n\n    def verify_signature(self, key: bytes, value: bytes, sig: bytes) -> bool:\n        \"\"\"Verifies the given signature matches the expected\n        signature.\n        \"\"\"\n        return hmac.compare_digest(sig, self.get_signature(key, value))"
+          },
+          {
+            "chunk_id": "5eaf0523-f173-56f0-aaee-cbd4ac1d98f7",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/timed.py",
+            "start_line": 19,
+            "end_line": 89,
+            "score": 0.01639344262295082,
+            "content": "\n\n\nclass TimestampSigner(Signer):\n    \"\"\"Works like the regular :class:`.Signer` but also records the time\n    of the signing and can be used to expire signatures. The\n    :meth:`unsign` method can raise :exc:`.SignatureExpired` if the\n    unsigning failed because the signature is expired.\n    \"\"\"\n\n    def get_timestamp(self) -> int:\n        \"\"\"Returns the current timestamp. The function must return an\n        integer.\n        \"\"\"\n        return int(time.time())\n\n    def timestamp_to_datetime(self, ts: int) -> datetime:\n        \"\"\"Convert the timestamp from :meth:`get_timestamp` into an\n        aware :class`datetime.datetime` in UTC.\n\n        .. versionchanged:: 2.0\n            The timestamp is returned as a timezone-aware ``datetime``\n            in UTC rather than a naive ``datetime`` assumed to be UTC.\n        \"\"\"\n        return datetime.fromtimestamp(ts, tz=timezone.utc)\n\n    def sign(self, value: str | bytes) -> bytes:\n        \"\"\"Signs the given string and also attaches time information.\"\"\"\n        value = want_bytes(value)\n        timestamp = base64_encode(int_to_bytes(self.get_timestamp()))\n        sep = want_bytes(self.sep)\n        value = value + sep + timestamp\n        return value + sep + self.get_signature(value)\n\n    # Ignore overlapping signatures check, return_timestamp is the only\n    # parameter that affects the return type.\n\n    @t.overload\n    def unsign(  # pyright: ignore\n        self,\n        signed_value: str | bytes,\n        max_age: int | None = None,\n        return_timestamp: t.Literal[False] = False,\n    ) -> bytes: ...\n\n    @t.overload\n    def unsign(\n        self,\n        signed_value: str | bytes,\n        max_age: int | None = None,\n        return_timestamp: t.Literal[True] = True,\n    ) -> tuple[bytes, datetime]: ...\n\n    def unsign(\n        self,\n        signed_value: str | bytes,\n        max_age: int | None = None,\n        return_timestamp: bool = False,\n    ) -> tuple[bytes, datetime] | bytes:\n        \"\"\"Works like the regular :meth:`.Signer.unsign` but can also\n        validate the time. See the base docstring of the class for\n        the general behavior. If ``return_timestamp`` is ``True`` the\n        timestamp of the signature will be returned as an aware\n        :class:`datetime.datetime` object in UTC.\n\n        .. versionchanged:: 2.0\n            The timestamp is returned as a timezone-aware ``datetime``\n            in UTC rather than a naive ``datetime`` assumed to be UTC.\n        \"\"\"\n        try:\n            result = super().unsign(signed_value"
+          },
+          {
+            "chunk_id": "a4970a16-8ab5-57cb-b988-98330f194e71",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "CHANGES.rst",
+            "start_line": 1,
+            "end_line": 79,
+            "score": 0.016129032258064516,
+            "content": "Version 2.3.0\n-------------\n\nUnreleased\n\n-   Drop support for Python 3.8 and 3.9.\n-   Remove previously deprecated code.\n\n\nVersion 2.2.0\n-------------\n\nReleased 2024-04-16\n\n-   Drop support for Python 3.7. :pr:`372`\n-   Use modern packaging metadata with ``pyproject.toml`` instead of ``setup.cfg``.\n    :pr:`326`\n-   Use ``flit_core`` instead of ``setuptools`` as build backend.\n-   Deprecate the ``__version__`` attribute. Use feature detection, or\n    ``importlib.metadata.version(\"itsdangerous\")``, instead. :issue:`371`\n-   ``Serializer`` and the return type of ``dumps`` is generic for type checking.\n    By default it is ``Serializer[str]`` and ``dumps`` returns a ``str``. If a\n    different ``serializer`` argument is given, it will try to infer the return\n    type of its ``dumps`` method. :issue:`347`\n-   The default ``hashlib.sha1`` may not be available in FIPS builds. Don't\n    access it at import time so the developer has time to change the default.\n    :issue:`375`\n\n\nVersion 2.1.2\n-------------\n\nReleased 2022-03-24\n\n-   Handle date overflow in timed unsign on 32-bit systems. :pr:`299`\n\n\nVersion 2.1.1\n-------------\n\nReleased 2022-03-09\n\n-   Handle date overflow in timed unsign. :pr:`296`\n\n\nVersion 2.1.0\n-------------\n\nReleased 2022-02-17\n\n-   Drop support for Python 3.6. :pr:`272`\n-   Remove previously deprecated code. :pr:`273`\n\n    -   JWS functionality: Use a dedicated library such as Authlib\n        instead.\n    -   ``import itsdangerous.json``: Import ``json`` from the standard\n        library instead.\n\n\nVersion 2.0.1\n-------------\n\nReleased 2021-05-18\n\n-   Mark top-level names as exported so type checking understands\n    imports in user projects. :pr:`240`\n-   The ``salt`` argument to ``Serializer`` and ``Signer`` can be\n    ``None`` again. :issue:`237`\n\n\nVersion 2.0.0\n-------------\n\nReleased 2021-05-11\n\n-   Drop support for Python 2 and 3.5.\n-   JWS support (``JSONWebSignatureSerializer``,\n    ``TimedJSONWebSignatureSerializer``) is deprecated. Use a dedicated\n    JWS/JWT library such as authlib instead."
+          },
+          {
+            "chunk_id": "dbf5e32c-d4a7-59c1-baeb-0fe1a1f7601c",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 37,
+            "end_line": 45,
+            "score": 0.016129032258064516,
+            "content": "\n\n\ndef _lazy_sha1(string: bytes = b\"\") -> t.Any:\n    \"\"\"Don't access ``hashlib.sha1`` until runtime. FIPS builds may not include\n    SHA-1, in which case the import and use as a default would fail before the\n    developer can configure something else.\n    \"\"\"\n    return hashlib.sha1(string)"
+          },
+          {
+            "chunk_id": "8310503f-1339-5431-9f9e-9df47c8eb9fa",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "docs/serializer.rst",
+            "start_line": 80,
+            "end_line": 112,
+            "score": 0.015873015873015872,
+            "content": " upgrade the signing parameters without invalidating\nexisting signatures immediately. For example, you may decide that you\nwant to use a different digest method. New signatures should use the new\nmethod, but old signatures should still validate.\n\nA list of ``fallback_signers`` can be given that will be tried if\nunsigning with the current signer fails. Each item in the list can be:\n\n-   A dict of ``signer_kwargs`` to instantiate the ``signer`` class\n    passed to the serializer.\n-   A :class:`~itsdangerous.signer.Signer` class to instantiated with\n    the ``secret_key``, ``salt``, and ``signer_kwargs`` passed to the\n    serializer.\n-   A tuple of ``(signer_class, signer_kwargs)`` to instantiate the\n    given class with the given args.\n\nFor example, this is a serializer that signs using SHA-512, but will\nunsign using either SHA-512 or SHA-1:\n\n.. code-block:: python\n\n    s = Serializer(\n        signer_kwargs={\"digest_method\": hashlib.sha512},\n        fallback_signers=[{\"digest_method\": hashlib.sha1}]\n    )\n\n\n\nAPI\n---\n\n.. autoclass:: Serializer\n    :members:\n"
+          },
+          {
+            "chunk_id": "b68911e0-3695-5b4f-bbe3-0f311836eb96",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 73,
+            "end_line": 129,
+            "score": 0.015873015873015872,
+            "content": "\n\n\nclass Signer:\n    \"\"\"A signer securely signs bytes, then unsigns them to verify that\n    the value hasn't been changed.\n\n    The secret key should be a random string of ``bytes`` and should not\n    be saved to code or version control. Different salts should be used\n    to distinguish signing in different contexts. See :doc:`/concepts`\n    for information about the security of the secret key and salt.\n\n    :param secret_key: The secret key to sign and verify with. Can be a\n        list of keys, oldest to newest, to support key rotation.\n    :param salt: Extra key to combine with ``secret_key`` to distinguish\n        signatures in different contexts.\n    :param sep: Separator between the signature and value.\n    :param key_derivation: How to derive the signing key from the secret\n        key and salt. Possible values are ``concat``, ``django-concat``,\n        or ``hmac``. Defaults to :attr:`default_key_derivation`, which\n        defaults to ``django-concat``.\n    :param digest_method: Hash function to use when generating the HMAC\n        signature. Defaults to :attr:`default_digest_method`, which\n        defaults to :func:`hashlib.sha1`. Note that the security of the\n        hash alone doesn't apply when used intermediately in HMAC.\n    :param algorithm: A :class:`SigningAlgorithm` instance to use\n        instead of building a default :class:`HMACAlgorithm` with the\n        ``digest_method``.\n\n    .. versionchanged:: 2.0\n        Added support for key rotation by passing a list to\n        ``secret_key``.\n\n    .. versionchanged:: 0.18\n        ``algorithm`` was added as an argument to the class constructor.\n\n    .. versionchanged:: 0.14\n        ``key_derivation`` and ``digest_method`` were added as arguments\n        to the class constructor.\n    \"\"\"\n\n    #: The default digest method to use for the signer. The default is\n    #: :func:`hashlib.sha1`, but can be changed to any :mod:`hashlib` or\n    #: compatible object. Note that the security of the hash alone\n    #: doesn't apply when used intermediately in HMAC.\n    #:\n    #: .. versionadded:: 0.14\n    default_digest_method: t.Any = staticmethod(_lazy_sha1)\n\n    #: The default scheme to use to derive the signing key from the\n    #: secret key and salt. The default is ``django-concat``. Possible\n    #: values are ``concat``, ``django-concat``, and ``hmac``.\n    #:\n    #: .. versionadded:: 0.14\n    default_key_derivation: str = \"django-concat\"\n\n    def"
+          },
+          {
+            "chunk_id": "bc1fe848-1e51-5037-98b5-c3564c635055",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/__init__.py",
+            "start_line": 10,
+            "end_line": 11,
+            "score": 0.015625,
+            "content": "\nfrom .signer import HMACAlgorithm as HMACAlgorithm"
+          },
+          {
+            "chunk_id": "3bea8c82-f28c-590f-a9f2-f2ebc5659f86",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/serializer.py",
+            "start_line": 37,
+            "end_line": 92,
+            "score": 0.015625,
+            "content": "\n\n\nclass Serializer(t.Generic[_TSerialized]):\n    \"\"\"A serializer wraps a :class:`~itsdangerous.signer.Signer` to\n    enable serializing and securely signing data other than bytes. It\n    can unsign to verify that the data hasn't been changed.\n\n    The serializer provides :meth:`dumps` and :meth:`loads`, similar to\n    :mod:`json`, and by default uses :mod:`json` internally to serialize\n    the data to bytes.\n\n    The secret key should be a random string of ``bytes`` and should not\n    be saved to code or version control. Different salts should be used\n    to distinguish signing in different contexts. See :doc:`/concepts`\n    for information about the security of the secret key and salt.\n\n    :param secret_key: The secret key to sign and verify with. Can be a\n        list of keys, oldest to newest, to support key rotation.\n    :param salt: Extra key to combine with ``secret_key`` to distinguish\n        signatures in different contexts.\n    :param serializer: An object that provides ``dumps`` and ``loads``\n        methods for serializing data to a string. Defaults to\n        :attr:`default_serializer`, which defaults to :mod:`json`.\n    :param serializer_kwargs: Keyword arguments to pass when calling\n        ``serializer.dumps``.\n    :param signer: A ``Signer`` class to instantiate when signing data.\n        Defaults to :attr:`default_signer`, which defaults to\n        :class:`~itsdangerous.signer.Signer`.\n    :param signer_kwargs: Keyword arguments to pass when instantiating\n        the ``Signer`` class.\n    :param fallback_signers: List of signer parameters to try when\n        unsigning with the default signer fails. Each item can be a dict\n        of ``signer_kwargs``, a ``Signer`` class, or a tuple of\n        ``(signer, signer_kwargs)``. Defaults to\n        :attr:`default_fallback_signers`.\n\n    .. versionchanged:: 2.0\n        Added support for key rotation by passing a list to\n        ``secret_key``.\n\n    .. versionchanged:: 2.0\n        Removed the default SHA-512 fallback signer from\n        ``default_fallback_signers``.\n\n    .. versionchanged:: 1.1\n        Added support for ``fallback_signers`` and configured a default\n        SHA-512 fallback. This fallback is for users who used the yanked\n        1.0.0 release which defaulted to SHA-512.\n\n    .. versionchanged:: 0.14\n        The ``signer`` and ``signer_kwargs`` parameters were added to\n        the constructor.\n    \"\"\"\n\n    #: The default serialization module to use to serialize data to a\n"
+          },
+          {
+            "chunk_id": "24d655fa-923e-5333-a168-e14ab1d75527",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/serializer.py",
+            "start_line": 32,
+            "end_line": 37,
+            "score": 0.015384615384615385,
+            "content": "\ndef is_text_serializer(\n    serializer: _PDataSerializer[t.Any],\n) -> te.TypeGuard[_PDataSerializer[str]]:\n    \"\"\"Checks whether a serializer generates text or binary.\"\"\"\n    return isinstance(serializer.dumps({}), str)"
+          },
+          {
+            "chunk_id": "84276e27-21a2-51e3-9652-4b6b72804437",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "docs/_static/itsdangerous-logo.svg",
+            "start_line": 13,
+            "end_line": 17,
+            "score": 0.015151515151515152,
+            "content": "4 178.3,569.7L184.1,574.9C187.1,577.6 190.6,581.8 199.5,583.1C201.2,583.1 201.7,585.2 200.3,586.1Z\" style=\"fill:white;\"/>\n                </g>\n                <g transform=\"matrix(5.4959,0,0,5.4959,463.172,-2335.76)\">\n                    <path d=\"M288.3,428L280.7,450.9C280.7,451 280.6,451.1 280.5,451.2L181.2,561.1C180.7,561.7 179.7,561.3 179.7,560.5L179.1,549.1C179.1,548.9 179.2,548.6 179.3,548.5L186.2,540.9C186.5,540.5 186.5,540 186.1,539.7L185.2,538.8C184.8,538.5 184.3,538.5 184,538.9L177.1,546.5C176.9,546.7 176.7,546.8 176.5,546.8L165.1,547.4C164.3,547.4 163.9,546.5 164.4,545.9L263.7,436.1C263.8,436 263.9,436 263.9,435.9C270.8,432.3 277.6,428.7 284.5,425.1C285.1,424.8 285.8,425.5 285.3,426.1L277.1,435.9C276.5,435.7 275.9,435.7 275.3,435.9C273.6,436.4 272.6,438.2 273.1,439.9C273.6,441.8 275.7,442.8 277.6,442C279,441.4 279.8,439.8 279.4,438.3C279.3,437.9 279.1,437.5 278.8,437.1L287,427.4C287.6,426.7 288.6,427.2 288.3,428Z\" style=\"fill:white;fill-rule:nonzero;\"/>\n                </g>\n"
+          },
+          {
+            "chunk_id": "9ad0b2d9-3b37-578f-ad36-fc2c947c9d84",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "tests/test_itsdangerous/test_serializer.py",
+            "start_line": 32,
+            "end_line": 104,
+            "score": 0.015151515151515152,
+            "content": "\n\n\nclass TestSerializer:\n    @pytest.fixture(params=(Serializer, partial(Serializer, serializer=pickle)))\n    def serializer_factory(self, request):\n        return partial(request.param, secret_key=\"secret_key\")\n\n    @pytest.fixture()\n    def serializer(self, serializer_factory):\n        return serializer_factory()\n\n    @pytest.fixture()\n    def value(self):\n        return {\"id\": 42}\n\n    @pytest.mark.parametrize(\n        \"value\", (None, True, \"str\", \"text\", [1, 2, 3], {\"id\": 42})\n    )\n    def test_serializer(self, serializer: Serializer, value: Any):\n        assert serializer.loads(serializer.dumps(value)) == value\n\n    @pytest.mark.parametrize(\n        \"transform\",\n        (\n            lambda s: s.upper(),\n            lambda s: s + coerce_str(s, \"a\"),\n            lambda s: coerce_str(s, \"a\") + s[1:],\n            lambda s: s.replace(coerce_str(s, \".\"), coerce_str(s, \"\")),\n        ),\n    )\n    def test_changed_value(self, serializer: Serializer, value: Any, transform):\n        signed = serializer.dumps(value)\n        assert serializer.loads(signed) == value\n        changed = transform(signed)\n\n        with pytest.raises(BadSignature):\n            serializer.loads(changed)\n\n    def test_bad_signature_exception(self, serializer: Serializer, value: Any):\n        bad_signed = serializer.dumps(value)[:-1]\n\n        with pytest.raises(BadSignature) as exc_info:\n            serializer.loads(bad_signed)\n\n        payload = cast(bytes, exc_info.value.payload)\n        assert serializer.load_payload(payload) == value\n\n    def test_bad_payload_exception(self, serializer: Serializer, value: Any):\n        original = serializer.dumps(value)\n        payload = original.rsplit(coerce_str(original, \".\"), 1)[0]  # type: ignore\n        bad = serializer.make_signer().sign(payload[:-1])\n\n        with pytest.raises(BadPayload) as exc_info:\n            serializer.loads(bad)\n\n        assert exc_info.value.original_error is not None\n\n    def test_loads_unsafe(self, serializer: Serializer, value: Any):\n        signed = serializer.dumps(value)\n        assert serializer.loads_unsafe(signed) == (True, value)\n\n        bad_signed = signed[:-1]\n        assert serializer.loads_unsafe(bad_signed) == (False, value)\n\n        payload = signed.rsplit(coerce_str(signed, \".\"), 1)[0]  # type: ignore\n        bad_payload = serializer.make_signer().sign(payload[:-1])[:-1]\n        assert serializer.loads_unsafe(bad_payload) == (False, None)\n\n        class BadUnsign(serializer.signer):  # type: ignore\n            def unsign(self, signed_value, *args, **kwargs):\n                try:\n                    return"
+          }
+        ],
+        "duration_ms": 87.28584300024522
+      },
+      "result": {
+        "answer": "Relevant source: src/itsdangerous/signer.py:201-266. alt + secret_key).digest())\n        elif self.key_derivation == \"django-concat\":\n            return t.cast(\n                bytes, self.digest_method(self.salt + b\"signer\" + secret_key).digest()\n            )\n        elif self.key_derivation == \"hmac\":\n            mac = hmac.new(secret_key, digestmod=self.digest_method)\n            mac.update(self.salt)\n            return mac.digest()\n        elif self.key_derivation == \"none\":\n            return secret_key\n        else:\n            raise TypeError(\"Unknown key derivation method\")\n\n    def get_signature(self, value: str | bytes) -> bytes:\n        \"\"\"Returns the signature for the given value.\"\"\"\n        value = want_bytes(value)\n        key = self.derive_key()\n        sig = self.algorithm.get_signature(key, value)\n        return base64_encode(sig)\n\n    def sign(self, value: str | bytes) -> bytes:\n        \"\"\"Signs the given string.\"\"\"\n        value = want_bytes(value)\n        return value + self.sep + self.get_signature(value)\n\n    def v",
+        "citations": [
+          {
+            "chunk_id": "0399bdf8-fdb3-534e-b094-41ce36d06137",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 201,
+            "end_line": 266
+          }
+        ],
+        "evidence_status": "supported",
+        "model": "mock",
+        "estimated_cost_usd": "0.000000"
+      },
+      "events": [
+        {
+          "run_id": "6a0f15a5-1590-4cad-a742-c3ee4af703c2",
+          "sequence": 1,
+          "occurred_at": "2026-11-17T07:05:35.149307Z",
+          "data": {
+            "kind": "run.started",
+            "model": "mock"
+          }
+        },
+        {
+          "run_id": "6a0f15a5-1590-4cad-a742-c3ee4af703c2",
+          "sequence": 2,
+          "occurred_at": "2026-11-17T07:05:35.151925Z",
+          "data": {
+            "kind": "tool.started",
+            "tool": "search_code",
+            "step": 1
+          }
+        },
+        {
+          "run_id": "6a0f15a5-1590-4cad-a742-c3ee4af703c2",
+          "sequence": 3,
+          "occurred_at": "2026-11-17T07:05:35.247939Z",
+          "data": {
+            "kind": "tool.completed",
+            "tool": "search_code",
+            "step": 1
+          }
+        },
+        {
+          "run_id": "6a0f15a5-1590-4cad-a742-c3ee4af703c2",
+          "sequence": 4,
+          "occurred_at": "2026-11-17T07:05:35.253705Z",
+          "data": {
+            "kind": "run.completed",
+            "result": {
+              "answer": "Relevant source: src/itsdangerous/signer.py:201-266. alt + secret_key).digest())\n        elif self.key_derivation == \"django-concat\":\n            return t.cast(\n                bytes, self.digest_method(self.salt + b\"signer\" + secret_key).digest()\n            )\n        elif self.key_derivation == \"hmac\":\n            mac = hmac.new(secret_key, digestmod=self.digest_method)\n            mac.update(self.salt)\n            return mac.digest()\n        elif self.key_derivation == \"none\":\n            return secret_key\n        else:\n            raise TypeError(\"Unknown key derivation method\")\n\n    def get_signature(self, value: str | bytes) -> bytes:\n        \"\"\"Returns the signature for the given value.\"\"\"\n        value = want_bytes(value)\n        key = self.derive_key()\n        sig = self.algorithm.get_signature(key, value)\n        return base64_encode(sig)\n\n    def sign(self, value: str | bytes) -> bytes:\n        \"\"\"Signs the given string.\"\"\"\n        value = want_bytes(value)\n        return value + self.sep + self.get_signature(value)\n\n    def v",
+              "citations": [
+                {
+                  "chunk_id": "0399bdf8-fdb3-534e-b094-41ce36d06137",
+                  "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+                  "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+                  "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+                  "path": "src/itsdangerous/signer.py",
+                  "start_line": 201,
+                  "end_line": 266
+                }
+              ],
+              "evidence_status": "supported",
+              "model": "mock",
+              "estimated_cost_usd": "0.000000"
+            }
+          }
+        }
+      ],
+      "resume_after": null,
+      "resumed_sequences": []
+    },
+    {
+      "id": "scoped",
+      "title": "Focus the search",
+      "question": "unsign",
+      "path_prefix": "src/itsdangerous/signer.py",
+      "search": {
+        "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+        "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+        "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+        "results": [
+          {
+            "chunk_id": "0399bdf8-fdb3-534e-b094-41ce36d06137",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 201,
+            "end_line": 266,
+            "score": 0.032018442622950824,
+            "content": "alt + secret_key).digest())\n        elif self.key_derivation == \"django-concat\":\n            return t.cast(\n                bytes, self.digest_method(self.salt + b\"signer\" + secret_key).digest()\n            )\n        elif self.key_derivation == \"hmac\":\n            mac = hmac.new(secret_key, digestmod=self.digest_method)\n            mac.update(self.salt)\n            return mac.digest()\n        elif self.key_derivation == \"none\":\n            return secret_key\n        else:\n            raise TypeError(\"Unknown key derivation method\")\n\n    def get_signature(self, value: str | bytes) -> bytes:\n        \"\"\"Returns the signature for the given value.\"\"\"\n        value = want_bytes(value)\n        key = self.derive_key()\n        sig = self.algorithm.get_signature(key, value)\n        return base64_encode(sig)\n\n    def sign(self, value: str | bytes) -> bytes:\n        \"\"\"Signs the given string.\"\"\"\n        value = want_bytes(value)\n        return value + self.sep + self.get_signature(value)\n\n    def verify_signature(self, value: str | bytes, sig: str | bytes) -> bool:\n        \"\"\"Verifies the signature for the given value.\"\"\"\n        try:\n            sig = base64_decode(sig)\n        except Exception:\n            return False\n\n        value = want_bytes(value)\n\n        for secret_key in reversed(self.secret_keys):\n            key = self.derive_key(secret_key)\n\n            if self.algorithm.verify_signature(key, value, sig):\n                return True\n\n        return False\n\n    def unsign(self, signed_value: str | bytes) -> bytes:\n        \"\"\"Unsigns the given string.\"\"\"\n        signed_value = want_bytes(signed_value)\n\n        if self.sep not in signed_value:\n            raise BadSignature(f\"No {self.sep!r} found in value\")\n\n        value, sig = signed_value.rsplit(self.sep, 1)\n\n        if self.verify_signature(value, sig):\n            return value\n\n        raise BadSignature(f\"Signature {sig!r} does not match\", payload=value)\n\n    def validate(self, signed_value: str | bytes) -> bool:\n        \"\"\"Only validates the given signed value. Returns ``True`` if\n        the signature exists and is valid.\n        \"\"\"\n        try:\n            self.unsign(signed_value)\n            return True\n        except BadSignature:\n            return False\n"
+          },
+          {
+            "chunk_id": "d9884444-bd3a-5c06-bced-c6e9b6fe9b26",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 12,
+            "end_line": 28,
+            "score": 0.01639344262295082,
+            "content": "\n\n\nclass SigningAlgorithm:\n    \"\"\"Subclasses must implement :meth:`get_signature` to provide\n    signature generation functionality.\n    \"\"\"\n\n    def get_signature(self, key: bytes, value: bytes) -> bytes:\n        \"\"\"Returns the signature for the given key and value.\"\"\"\n        raise NotImplementedError()\n\n    def verify_signature(self, key: bytes, value: bytes, sig: bytes) -> bool:\n        \"\"\"Verifies the given signature matches the expected\n        signature.\n        \"\"\"\n        return hmac.compare_digest(sig, self.get_signature(key, value))"
+          },
+          {
+            "chunk_id": "dbf5e32c-d4a7-59c1-baeb-0fe1a1f7601c",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 37,
+            "end_line": 45,
+            "score": 0.016129032258064516,
+            "content": "\n\n\ndef _lazy_sha1(string: bytes = b\"\") -> t.Any:\n    \"\"\"Don't access ``hashlib.sha1`` until runtime. FIPS builds may not include\n    SHA-1, in which case the import and use as a default would fail before the\n    developer can configure something else.\n    \"\"\"\n    return hashlib.sha1(string)"
+          },
+          {
+            "chunk_id": "b68911e0-3695-5b4f-bbe3-0f311836eb96",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 73,
+            "end_line": 129,
+            "score": 0.015873015873015872,
+            "content": "\n\n\nclass Signer:\n    \"\"\"A signer securely signs bytes, then unsigns them to verify that\n    the value hasn't been changed.\n\n    The secret key should be a random string of ``bytes`` and should not\n    be saved to code or version control. Different salts should be used\n    to distinguish signing in different contexts. See :doc:`/concepts`\n    for information about the security of the secret key and salt.\n\n    :param secret_key: The secret key to sign and verify with. Can be a\n        list of keys, oldest to newest, to support key rotation.\n    :param salt: Extra key to combine with ``secret_key`` to distinguish\n        signatures in different contexts.\n    :param sep: Separator between the signature and value.\n    :param key_derivation: How to derive the signing key from the secret\n        key and salt. Possible values are ``concat``, ``django-concat``,\n        or ``hmac``. Defaults to :attr:`default_key_derivation`, which\n        defaults to ``django-concat``.\n    :param digest_method: Hash function to use when generating the HMAC\n        signature. Defaults to :attr:`default_digest_method`, which\n        defaults to :func:`hashlib.sha1`. Note that the security of the\n        hash alone doesn't apply when used intermediately in HMAC.\n    :param algorithm: A :class:`SigningAlgorithm` instance to use\n        instead of building a default :class:`HMACAlgorithm` with the\n        ``digest_method``.\n\n    .. versionchanged:: 2.0\n        Added support for key rotation by passing a list to\n        ``secret_key``.\n\n    .. versionchanged:: 0.18\n        ``algorithm`` was added as an argument to the class constructor.\n\n    .. versionchanged:: 0.14\n        ``key_derivation`` and ``digest_method`` were added as arguments\n        to the class constructor.\n    \"\"\"\n\n    #: The default digest method to use for the signer. The default is\n    #: :func:`hashlib.sha1`, but can be changed to any :mod:`hashlib` or\n    #: compatible object. Note that the security of the hash alone\n    #: doesn't apply when used intermediately in HMAC.\n    #:\n    #: .. versionadded:: 0.14\n    default_digest_method: t.Any = staticmethod(_lazy_sha1)\n\n    #: The default scheme to use to derive the signing key from the\n    #: secret key and salt. The default is ``django-concat``. Possible\n    #: values are ``concat``, ``django-concat``, and ``hmac``.\n    #:\n    #: .. versionadded:: 0.14\n    default_key_derivation: str = \"django-concat\"\n\n    def"
+          },
+          {
+            "chunk_id": "8b2f3ae9-195b-5129-8b80-43d2789b06df",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 6,
+            "end_line": 8,
+            "score": 0.015384615384615385,
+            "content": "\n\nfrom .encoding import _base64_alphabet"
+          },
+          {
+            "chunk_id": "0975a456-338f-530c-a2fa-0f82ce663179",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 4,
+            "end_line": 5,
+            "score": 0.015151515151515152,
+            "content": "\nimport hmac"
+          },
+          {
+            "chunk_id": "cdf6187a-430e-53bd-87bf-aedef41989cf",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 8,
+            "end_line": 9,
+            "score": 0.014925373134328358,
+            "content": "\nfrom .encoding import base64_decode"
+          },
+          {
+            "chunk_id": "a0531e67-060a-5333-af3f-21ada5ad4b67",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 5,
+            "end_line": 6,
+            "score": 0.014705882352941176,
+            "content": "\nimport typing as t"
+          },
+          {
+            "chunk_id": "61f97c9e-fc09-5bdc-bc42-6ff4cfee2c11",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 11,
+            "end_line": 12,
+            "score": 0.014492753623188406,
+            "content": "\nfrom .exc import BadSignature"
+          },
+          {
+            "chunk_id": "1c56ce54-f3fc-5536-832a-f250a0fe7032",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 45,
+            "end_line": 64,
+            "score": 0.014285714285714285,
+            "content": "\n\n\nclass HMACAlgorithm(SigningAlgorithm):\n    \"\"\"Provides signature generation using HMACs.\"\"\"\n\n    #: The digest method to use with the MAC algorithm. This defaults to\n    #: SHA1, but can be changed to any other function in the hashlib\n    #: module.\n    default_digest_method: t.Any = staticmethod(_lazy_sha1)\n\n    def __init__(self, digest_method: t.Any = None):\n        if digest_method is None:\n            digest_method = self.default_digest_method\n\n        self.digest_method: t.Any = digest_method\n\n    def get_signature(self, key: bytes, value: bytes) -> bytes:\n        mac = hmac.new(key, msg=value, digestmod=self.digest_method)\n        return mac.digest()"
+          },
+          {
+            "chunk_id": "7dd59389-219e-5206-bb7d-e49fbb3c4bc1",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 1,
+            "end_line": 3,
+            "score": 0.014084507042253521,
+            "content": "\n\nimport collections.abc as cabc"
+          },
+          {
+            "chunk_id": "e6bbb298-6ecc-54af-b145-7fcdd2a0208f",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 3,
+            "end_line": 4,
+            "score": 0.013888888888888888,
+            "content": "\nimport hashlib"
+          }
+        ],
+        "duration_ms": 4.960287999892898
+      },
+      "result": {
+        "answer": "Relevant source: src/itsdangerous/signer.py:201-266. alt + secret_key).digest())\n        elif self.key_derivation == \"django-concat\":\n            return t.cast(\n                bytes, self.digest_method(self.salt + b\"signer\" + secret_key).digest()\n            )\n        elif self.key_derivation == \"hmac\":\n            mac = hmac.new(secret_key, digestmod=self.digest_method)\n            mac.update(self.salt)\n            return mac.digest()\n        elif self.key_derivation == \"none\":\n            return secret_key\n        else:\n            raise TypeError(\"Unknown key derivation method\")\n\n    def get_signature(self, value: str | bytes) -> bytes:\n        \"\"\"Returns the signature for the given value.\"\"\"\n        value = want_bytes(value)\n        key = self.derive_key()\n        sig = self.algorithm.get_signature(key, value)\n        return base64_encode(sig)\n\n    def sign(self, value: str | bytes) -> bytes:\n        \"\"\"Signs the given string.\"\"\"\n        value = want_bytes(value)\n        return value + self.sep + self.get_signature(value)\n\n    def v",
+        "citations": [
+          {
+            "chunk_id": "0399bdf8-fdb3-534e-b094-41ce36d06137",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 201,
+            "end_line": 266
+          }
+        ],
+        "evidence_status": "supported",
+        "model": "mock",
+        "estimated_cost_usd": "0.000000"
+      },
+      "events": [
+        {
+          "run_id": "de97e7b9-44ef-4ddf-a301-873a2234cbea",
+          "sequence": 1,
+          "occurred_at": "2026-11-17T07:05:36.158467Z",
+          "data": {
+            "kind": "run.started",
+            "model": "mock"
+          }
+        },
+        {
+          "run_id": "de97e7b9-44ef-4ddf-a301-873a2234cbea",
+          "sequence": 2,
+          "occurred_at": "2026-11-17T07:05:36.162037Z",
+          "data": {
+            "kind": "tool.started",
+            "tool": "search_code",
+            "step": 1
+          }
+        },
+        {
+          "run_id": "de97e7b9-44ef-4ddf-a301-873a2234cbea",
+          "sequence": 3,
+          "occurred_at": "2026-11-17T07:05:36.176244Z",
+          "data": {
+            "kind": "tool.completed",
+            "tool": "search_code",
+            "step": 1
+          }
+        },
+        {
+          "run_id": "de97e7b9-44ef-4ddf-a301-873a2234cbea",
+          "sequence": 4,
+          "occurred_at": "2026-11-17T07:05:36.181409Z",
+          "data": {
+            "kind": "run.completed",
+            "result": {
+              "answer": "Relevant source: src/itsdangerous/signer.py:201-266. alt + secret_key).digest())\n        elif self.key_derivation == \"django-concat\":\n            return t.cast(\n                bytes, self.digest_method(self.salt + b\"signer\" + secret_key).digest()\n            )\n        elif self.key_derivation == \"hmac\":\n            mac = hmac.new(secret_key, digestmod=self.digest_method)\n            mac.update(self.salt)\n            return mac.digest()\n        elif self.key_derivation == \"none\":\n            return secret_key\n        else:\n            raise TypeError(\"Unknown key derivation method\")\n\n    def get_signature(self, value: str | bytes) -> bytes:\n        \"\"\"Returns the signature for the given value.\"\"\"\n        value = want_bytes(value)\n        key = self.derive_key()\n        sig = self.algorithm.get_signature(key, value)\n        return base64_encode(sig)\n\n    def sign(self, value: str | bytes) -> bytes:\n        \"\"\"Signs the given string.\"\"\"\n        value = want_bytes(value)\n        return value + self.sep + self.get_signature(value)\n\n    def v",
+              "citations": [
+                {
+                  "chunk_id": "0399bdf8-fdb3-534e-b094-41ce36d06137",
+                  "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+                  "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+                  "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+                  "path": "src/itsdangerous/signer.py",
+                  "start_line": 201,
+                  "end_line": 266
+                }
+              ],
+              "evidence_status": "supported",
+              "model": "mock",
+              "estimated_cost_usd": "0.000000"
+            }
+          }
+        }
+      ],
+      "resume_after": null,
+      "resumed_sequences": []
+    },
+    {
+      "id": "resume",
+      "title": "Resume a disconnected stream",
+      "question": "unsign",
+      "path_prefix": null,
+      "search": {
+        "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+        "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+        "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+        "results": [
+          {
+            "chunk_id": "0399bdf8-fdb3-534e-b094-41ce36d06137",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 201,
+            "end_line": 266,
+            "score": 0.025,
+            "content": "alt + secret_key).digest())\n        elif self.key_derivation == \"django-concat\":\n            return t.cast(\n                bytes, self.digest_method(self.salt + b\"signer\" + secret_key).digest()\n            )\n        elif self.key_derivation == \"hmac\":\n            mac = hmac.new(secret_key, digestmod=self.digest_method)\n            mac.update(self.salt)\n            return mac.digest()\n        elif self.key_derivation == \"none\":\n            return secret_key\n        else:\n            raise TypeError(\"Unknown key derivation method\")\n\n    def get_signature(self, value: str | bytes) -> bytes:\n        \"\"\"Returns the signature for the given value.\"\"\"\n        value = want_bytes(value)\n        key = self.derive_key()\n        sig = self.algorithm.get_signature(key, value)\n        return base64_encode(sig)\n\n    def sign(self, value: str | bytes) -> bytes:\n        \"\"\"Signs the given string.\"\"\"\n        value = want_bytes(value)\n        return value + self.sep + self.get_signature(value)\n\n    def verify_signature(self, value: str | bytes, sig: str | bytes) -> bool:\n        \"\"\"Verifies the signature for the given value.\"\"\"\n        try:\n            sig = base64_decode(sig)\n        except Exception:\n            return False\n\n        value = want_bytes(value)\n\n        for secret_key in reversed(self.secret_keys):\n            key = self.derive_key(secret_key)\n\n            if self.algorithm.verify_signature(key, value, sig):\n                return True\n\n        return False\n\n    def unsign(self, signed_value: str | bytes) -> bytes:\n        \"\"\"Unsigns the given string.\"\"\"\n        signed_value = want_bytes(signed_value)\n\n        if self.sep not in signed_value:\n            raise BadSignature(f\"No {self.sep!r} found in value\")\n\n        value, sig = signed_value.rsplit(self.sep, 1)\n\n        if self.verify_signature(value, sig):\n            return value\n\n        raise BadSignature(f\"Signature {sig!r} does not match\", payload=value)\n\n    def validate(self, signed_value: str | bytes) -> bool:\n        \"\"\"Only validates the given signed value. Returns ``True`` if\n        the signature exists and is valid.\n        \"\"\"\n        try:\n            self.unsign(signed_value)\n            return True\n        except BadSignature:\n            return False\n"
+          },
+          {
+            "chunk_id": "d9884444-bd3a-5c06-bced-c6e9b6fe9b26",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 12,
+            "end_line": 28,
+            "score": 0.01639344262295082,
+            "content": "\n\n\nclass SigningAlgorithm:\n    \"\"\"Subclasses must implement :meth:`get_signature` to provide\n    signature generation functionality.\n    \"\"\"\n\n    def get_signature(self, key: bytes, value: bytes) -> bytes:\n        \"\"\"Returns the signature for the given key and value.\"\"\"\n        raise NotImplementedError()\n\n    def verify_signature(self, key: bytes, value: bytes, sig: bytes) -> bool:\n        \"\"\"Verifies the given signature matches the expected\n        signature.\n        \"\"\"\n        return hmac.compare_digest(sig, self.get_signature(key, value))"
+          },
+          {
+            "chunk_id": "5eaf0523-f173-56f0-aaee-cbd4ac1d98f7",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/timed.py",
+            "start_line": 19,
+            "end_line": 89,
+            "score": 0.01639344262295082,
+            "content": "\n\n\nclass TimestampSigner(Signer):\n    \"\"\"Works like the regular :class:`.Signer` but also records the time\n    of the signing and can be used to expire signatures. The\n    :meth:`unsign` method can raise :exc:`.SignatureExpired` if the\n    unsigning failed because the signature is expired.\n    \"\"\"\n\n    def get_timestamp(self) -> int:\n        \"\"\"Returns the current timestamp. The function must return an\n        integer.\n        \"\"\"\n        return int(time.time())\n\n    def timestamp_to_datetime(self, ts: int) -> datetime:\n        \"\"\"Convert the timestamp from :meth:`get_timestamp` into an\n        aware :class`datetime.datetime` in UTC.\n\n        .. versionchanged:: 2.0\n            The timestamp is returned as a timezone-aware ``datetime``\n            in UTC rather than a naive ``datetime`` assumed to be UTC.\n        \"\"\"\n        return datetime.fromtimestamp(ts, tz=timezone.utc)\n\n    def sign(self, value: str | bytes) -> bytes:\n        \"\"\"Signs the given string and also attaches time information.\"\"\"\n        value = want_bytes(value)\n        timestamp = base64_encode(int_to_bytes(self.get_timestamp()))\n        sep = want_bytes(self.sep)\n        value = value + sep + timestamp\n        return value + sep + self.get_signature(value)\n\n    # Ignore overlapping signatures check, return_timestamp is the only\n    # parameter that affects the return type.\n\n    @t.overload\n    def unsign(  # pyright: ignore\n        self,\n        signed_value: str | bytes,\n        max_age: int | None = None,\n        return_timestamp: t.Literal[False] = False,\n    ) -> bytes: ...\n\n    @t.overload\n    def unsign(\n        self,\n        signed_value: str | bytes,\n        max_age: int | None = None,\n        return_timestamp: t.Literal[True] = True,\n    ) -> tuple[bytes, datetime]: ...\n\n    def unsign(\n        self,\n        signed_value: str | bytes,\n        max_age: int | None = None,\n        return_timestamp: bool = False,\n    ) -> tuple[bytes, datetime] | bytes:\n        \"\"\"Works like the regular :meth:`.Signer.unsign` but can also\n        validate the time. See the base docstring of the class for\n        the general behavior. If ``return_timestamp`` is ``True`` the\n        timestamp of the signature will be returned as an aware\n        :class:`datetime.datetime` object in UTC.\n\n        .. versionchanged:: 2.0\n            The timestamp is returned as a timezone-aware ``datetime``\n            in UTC rather than a naive ``datetime`` assumed to be UTC.\n        \"\"\"\n        try:\n            result = super().unsign(signed_value"
+          },
+          {
+            "chunk_id": "a4970a16-8ab5-57cb-b988-98330f194e71",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "CHANGES.rst",
+            "start_line": 1,
+            "end_line": 79,
+            "score": 0.016129032258064516,
+            "content": "Version 2.3.0\n-------------\n\nUnreleased\n\n-   Drop support for Python 3.8 and 3.9.\n-   Remove previously deprecated code.\n\n\nVersion 2.2.0\n-------------\n\nReleased 2024-04-16\n\n-   Drop support for Python 3.7. :pr:`372`\n-   Use modern packaging metadata with ``pyproject.toml`` instead of ``setup.cfg``.\n    :pr:`326`\n-   Use ``flit_core`` instead of ``setuptools`` as build backend.\n-   Deprecate the ``__version__`` attribute. Use feature detection, or\n    ``importlib.metadata.version(\"itsdangerous\")``, instead. :issue:`371`\n-   ``Serializer`` and the return type of ``dumps`` is generic for type checking.\n    By default it is ``Serializer[str]`` and ``dumps`` returns a ``str``. If a\n    different ``serializer`` argument is given, it will try to infer the return\n    type of its ``dumps`` method. :issue:`347`\n-   The default ``hashlib.sha1`` may not be available in FIPS builds. Don't\n    access it at import time so the developer has time to change the default.\n    :issue:`375`\n\n\nVersion 2.1.2\n-------------\n\nReleased 2022-03-24\n\n-   Handle date overflow in timed unsign on 32-bit systems. :pr:`299`\n\n\nVersion 2.1.1\n-------------\n\nReleased 2022-03-09\n\n-   Handle date overflow in timed unsign. :pr:`296`\n\n\nVersion 2.1.0\n-------------\n\nReleased 2022-02-17\n\n-   Drop support for Python 3.6. :pr:`272`\n-   Remove previously deprecated code. :pr:`273`\n\n    -   JWS functionality: Use a dedicated library such as Authlib\n        instead.\n    -   ``import itsdangerous.json``: Import ``json`` from the standard\n        library instead.\n\n\nVersion 2.0.1\n-------------\n\nReleased 2021-05-18\n\n-   Mark top-level names as exported so type checking understands\n    imports in user projects. :pr:`240`\n-   The ``salt`` argument to ``Serializer`` and ``Signer`` can be\n    ``None`` again. :issue:`237`\n\n\nVersion 2.0.0\n-------------\n\nReleased 2021-05-11\n\n-   Drop support for Python 2 and 3.5.\n-   JWS support (``JSONWebSignatureSerializer``,\n    ``TimedJSONWebSignatureSerializer``) is deprecated. Use a dedicated\n    JWS/JWT library such as authlib instead."
+          },
+          {
+            "chunk_id": "dbf5e32c-d4a7-59c1-baeb-0fe1a1f7601c",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 37,
+            "end_line": 45,
+            "score": 0.016129032258064516,
+            "content": "\n\n\ndef _lazy_sha1(string: bytes = b\"\") -> t.Any:\n    \"\"\"Don't access ``hashlib.sha1`` until runtime. FIPS builds may not include\n    SHA-1, in which case the import and use as a default would fail before the\n    developer can configure something else.\n    \"\"\"\n    return hashlib.sha1(string)"
+          },
+          {
+            "chunk_id": "8310503f-1339-5431-9f9e-9df47c8eb9fa",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "docs/serializer.rst",
+            "start_line": 80,
+            "end_line": 112,
+            "score": 0.015873015873015872,
+            "content": " upgrade the signing parameters without invalidating\nexisting signatures immediately. For example, you may decide that you\nwant to use a different digest method. New signatures should use the new\nmethod, but old signatures should still validate.\n\nA list of ``fallback_signers`` can be given that will be tried if\nunsigning with the current signer fails. Each item in the list can be:\n\n-   A dict of ``signer_kwargs`` to instantiate the ``signer`` class\n    passed to the serializer.\n-   A :class:`~itsdangerous.signer.Signer` class to instantiated with\n    the ``secret_key``, ``salt``, and ``signer_kwargs`` passed to the\n    serializer.\n-   A tuple of ``(signer_class, signer_kwargs)`` to instantiate the\n    given class with the given args.\n\nFor example, this is a serializer that signs using SHA-512, but will\nunsign using either SHA-512 or SHA-1:\n\n.. code-block:: python\n\n    s = Serializer(\n        signer_kwargs={\"digest_method\": hashlib.sha512},\n        fallback_signers=[{\"digest_method\": hashlib.sha1}]\n    )\n\n\n\nAPI\n---\n\n.. autoclass:: Serializer\n    :members:\n"
+          },
+          {
+            "chunk_id": "b68911e0-3695-5b4f-bbe3-0f311836eb96",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 73,
+            "end_line": 129,
+            "score": 0.015873015873015872,
+            "content": "\n\n\nclass Signer:\n    \"\"\"A signer securely signs bytes, then unsigns them to verify that\n    the value hasn't been changed.\n\n    The secret key should be a random string of ``bytes`` and should not\n    be saved to code or version control. Different salts should be used\n    to distinguish signing in different contexts. See :doc:`/concepts`\n    for information about the security of the secret key and salt.\n\n    :param secret_key: The secret key to sign and verify with. Can be a\n        list of keys, oldest to newest, to support key rotation.\n    :param salt: Extra key to combine with ``secret_key`` to distinguish\n        signatures in different contexts.\n    :param sep: Separator between the signature and value.\n    :param key_derivation: How to derive the signing key from the secret\n        key and salt. Possible values are ``concat``, ``django-concat``,\n        or ``hmac``. Defaults to :attr:`default_key_derivation`, which\n        defaults to ``django-concat``.\n    :param digest_method: Hash function to use when generating the HMAC\n        signature. Defaults to :attr:`default_digest_method`, which\n        defaults to :func:`hashlib.sha1`. Note that the security of the\n        hash alone doesn't apply when used intermediately in HMAC.\n    :param algorithm: A :class:`SigningAlgorithm` instance to use\n        instead of building a default :class:`HMACAlgorithm` with the\n        ``digest_method``.\n\n    .. versionchanged:: 2.0\n        Added support for key rotation by passing a list to\n        ``secret_key``.\n\n    .. versionchanged:: 0.18\n        ``algorithm`` was added as an argument to the class constructor.\n\n    .. versionchanged:: 0.14\n        ``key_derivation`` and ``digest_method`` were added as arguments\n        to the class constructor.\n    \"\"\"\n\n    #: The default digest method to use for the signer. The default is\n    #: :func:`hashlib.sha1`, but can be changed to any :mod:`hashlib` or\n    #: compatible object. Note that the security of the hash alone\n    #: doesn't apply when used intermediately in HMAC.\n    #:\n    #: .. versionadded:: 0.14\n    default_digest_method: t.Any = staticmethod(_lazy_sha1)\n\n    #: The default scheme to use to derive the signing key from the\n    #: secret key and salt. The default is ``django-concat``. Possible\n    #: values are ``concat``, ``django-concat``, and ``hmac``.\n    #:\n    #: .. versionadded:: 0.14\n    default_key_derivation: str = \"django-concat\"\n\n    def"
+          },
+          {
+            "chunk_id": "bc1fe848-1e51-5037-98b5-c3564c635055",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/__init__.py",
+            "start_line": 10,
+            "end_line": 11,
+            "score": 0.015625,
+            "content": "\nfrom .signer import HMACAlgorithm as HMACAlgorithm"
+          },
+          {
+            "chunk_id": "3bea8c82-f28c-590f-a9f2-f2ebc5659f86",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/serializer.py",
+            "start_line": 37,
+            "end_line": 92,
+            "score": 0.015625,
+            "content": "\n\n\nclass Serializer(t.Generic[_TSerialized]):\n    \"\"\"A serializer wraps a :class:`~itsdangerous.signer.Signer` to\n    enable serializing and securely signing data other than bytes. It\n    can unsign to verify that the data hasn't been changed.\n\n    The serializer provides :meth:`dumps` and :meth:`loads`, similar to\n    :mod:`json`, and by default uses :mod:`json` internally to serialize\n    the data to bytes.\n\n    The secret key should be a random string of ``bytes`` and should not\n    be saved to code or version control. Different salts should be used\n    to distinguish signing in different contexts. See :doc:`/concepts`\n    for information about the security of the secret key and salt.\n\n    :param secret_key: The secret key to sign and verify with. Can be a\n        list of keys, oldest to newest, to support key rotation.\n    :param salt: Extra key to combine with ``secret_key`` to distinguish\n        signatures in different contexts.\n    :param serializer: An object that provides ``dumps`` and ``loads``\n        methods for serializing data to a string. Defaults to\n        :attr:`default_serializer`, which defaults to :mod:`json`.\n    :param serializer_kwargs: Keyword arguments to pass when calling\n        ``serializer.dumps``.\n    :param signer: A ``Signer`` class to instantiate when signing data.\n        Defaults to :attr:`default_signer`, which defaults to\n        :class:`~itsdangerous.signer.Signer`.\n    :param signer_kwargs: Keyword arguments to pass when instantiating\n        the ``Signer`` class.\n    :param fallback_signers: List of signer parameters to try when\n        unsigning with the default signer fails. Each item can be a dict\n        of ``signer_kwargs``, a ``Signer`` class, or a tuple of\n        ``(signer, signer_kwargs)``. Defaults to\n        :attr:`default_fallback_signers`.\n\n    .. versionchanged:: 2.0\n        Added support for key rotation by passing a list to\n        ``secret_key``.\n\n    .. versionchanged:: 2.0\n        Removed the default SHA-512 fallback signer from\n        ``default_fallback_signers``.\n\n    .. versionchanged:: 1.1\n        Added support for ``fallback_signers`` and configured a default\n        SHA-512 fallback. This fallback is for users who used the yanked\n        1.0.0 release which defaulted to SHA-512.\n\n    .. versionchanged:: 0.14\n        The ``signer`` and ``signer_kwargs`` parameters were added to\n        the constructor.\n    \"\"\"\n\n    #: The default serialization module to use to serialize data to a\n"
+          },
+          {
+            "chunk_id": "24d655fa-923e-5333-a168-e14ab1d75527",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/serializer.py",
+            "start_line": 32,
+            "end_line": 37,
+            "score": 0.015384615384615385,
+            "content": "\ndef is_text_serializer(\n    serializer: _PDataSerializer[t.Any],\n) -> te.TypeGuard[_PDataSerializer[str]]:\n    \"\"\"Checks whether a serializer generates text or binary.\"\"\"\n    return isinstance(serializer.dumps({}), str)"
+          },
+          {
+            "chunk_id": "84276e27-21a2-51e3-9652-4b6b72804437",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "docs/_static/itsdangerous-logo.svg",
+            "start_line": 13,
+            "end_line": 17,
+            "score": 0.015151515151515152,
+            "content": "4 178.3,569.7L184.1,574.9C187.1,577.6 190.6,581.8 199.5,583.1C201.2,583.1 201.7,585.2 200.3,586.1Z\" style=\"fill:white;\"/>\n                </g>\n                <g transform=\"matrix(5.4959,0,0,5.4959,463.172,-2335.76)\">\n                    <path d=\"M288.3,428L280.7,450.9C280.7,451 280.6,451.1 280.5,451.2L181.2,561.1C180.7,561.7 179.7,561.3 179.7,560.5L179.1,549.1C179.1,548.9 179.2,548.6 179.3,548.5L186.2,540.9C186.5,540.5 186.5,540 186.1,539.7L185.2,538.8C184.8,538.5 184.3,538.5 184,538.9L177.1,546.5C176.9,546.7 176.7,546.8 176.5,546.8L165.1,547.4C164.3,547.4 163.9,546.5 164.4,545.9L263.7,436.1C263.8,436 263.9,436 263.9,435.9C270.8,432.3 277.6,428.7 284.5,425.1C285.1,424.8 285.8,425.5 285.3,426.1L277.1,435.9C276.5,435.7 275.9,435.7 275.3,435.9C273.6,436.4 272.6,438.2 273.1,439.9C273.6,441.8 275.7,442.8 277.6,442C279,441.4 279.8,439.8 279.4,438.3C279.3,437.9 279.1,437.5 278.8,437.1L287,427.4C287.6,426.7 288.6,427.2 288.3,428Z\" style=\"fill:white;fill-rule:nonzero;\"/>\n                </g>\n"
+          },
+          {
+            "chunk_id": "9ad0b2d9-3b37-578f-ad36-fc2c947c9d84",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "tests/test_itsdangerous/test_serializer.py",
+            "start_line": 32,
+            "end_line": 104,
+            "score": 0.015151515151515152,
+            "content": "\n\n\nclass TestSerializer:\n    @pytest.fixture(params=(Serializer, partial(Serializer, serializer=pickle)))\n    def serializer_factory(self, request):\n        return partial(request.param, secret_key=\"secret_key\")\n\n    @pytest.fixture()\n    def serializer(self, serializer_factory):\n        return serializer_factory()\n\n    @pytest.fixture()\n    def value(self):\n        return {\"id\": 42}\n\n    @pytest.mark.parametrize(\n        \"value\", (None, True, \"str\", \"text\", [1, 2, 3], {\"id\": 42})\n    )\n    def test_serializer(self, serializer: Serializer, value: Any):\n        assert serializer.loads(serializer.dumps(value)) == value\n\n    @pytest.mark.parametrize(\n        \"transform\",\n        (\n            lambda s: s.upper(),\n            lambda s: s + coerce_str(s, \"a\"),\n            lambda s: coerce_str(s, \"a\") + s[1:],\n            lambda s: s.replace(coerce_str(s, \".\"), coerce_str(s, \"\")),\n        ),\n    )\n    def test_changed_value(self, serializer: Serializer, value: Any, transform):\n        signed = serializer.dumps(value)\n        assert serializer.loads(signed) == value\n        changed = transform(signed)\n\n        with pytest.raises(BadSignature):\n            serializer.loads(changed)\n\n    def test_bad_signature_exception(self, serializer: Serializer, value: Any):\n        bad_signed = serializer.dumps(value)[:-1]\n\n        with pytest.raises(BadSignature) as exc_info:\n            serializer.loads(bad_signed)\n\n        payload = cast(bytes, exc_info.value.payload)\n        assert serializer.load_payload(payload) == value\n\n    def test_bad_payload_exception(self, serializer: Serializer, value: Any):\n        original = serializer.dumps(value)\n        payload = original.rsplit(coerce_str(original, \".\"), 1)[0]  # type: ignore\n        bad = serializer.make_signer().sign(payload[:-1])\n\n        with pytest.raises(BadPayload) as exc_info:\n            serializer.loads(bad)\n\n        assert exc_info.value.original_error is not None\n\n    def test_loads_unsafe(self, serializer: Serializer, value: Any):\n        signed = serializer.dumps(value)\n        assert serializer.loads_unsafe(signed) == (True, value)\n\n        bad_signed = signed[:-1]\n        assert serializer.loads_unsafe(bad_signed) == (False, value)\n\n        payload = signed.rsplit(coerce_str(signed, \".\"), 1)[0]  # type: ignore\n        bad_payload = serializer.make_signer().sign(payload[:-1])[:-1]\n        assert serializer.loads_unsafe(bad_payload) == (False, None)\n\n        class BadUnsign(serializer.signer):  # type: ignore\n            def unsign(self, signed_value, *args, **kwargs):\n                try:\n                    return"
+          }
+        ],
+        "duration_ms": 9.709679000025062
+      },
+      "result": {
+        "answer": "Relevant source: src/itsdangerous/signer.py:201-266. alt + secret_key).digest())\n        elif self.key_derivation == \"django-concat\":\n            return t.cast(\n                bytes, self.digest_method(self.salt + b\"signer\" + secret_key).digest()\n            )\n        elif self.key_derivation == \"hmac\":\n            mac = hmac.new(secret_key, digestmod=self.digest_method)\n            mac.update(self.salt)\n            return mac.digest()\n        elif self.key_derivation == \"none\":\n            return secret_key\n        else:\n            raise TypeError(\"Unknown key derivation method\")\n\n    def get_signature(self, value: str | bytes) -> bytes:\n        \"\"\"Returns the signature for the given value.\"\"\"\n        value = want_bytes(value)\n        key = self.derive_key()\n        sig = self.algorithm.get_signature(key, value)\n        return base64_encode(sig)\n\n    def sign(self, value: str | bytes) -> bytes:\n        \"\"\"Signs the given string.\"\"\"\n        value = want_bytes(value)\n        return value + self.sep + self.get_signature(value)\n\n    def v",
+        "citations": [
+          {
+            "chunk_id": "0399bdf8-fdb3-534e-b094-41ce36d06137",
+            "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+            "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+            "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+            "path": "src/itsdangerous/signer.py",
+            "start_line": 201,
+            "end_line": 266
+          }
+        ],
+        "evidence_status": "supported",
+        "model": "mock",
+        "estimated_cost_usd": "0.000000"
+      },
+      "events": [
+        {
+          "run_id": "5e9a36ba-4167-4836-a4f8-3b5cb3b08a2c",
+          "sequence": 1,
+          "occurred_at": "2026-11-17T07:05:37.165898Z",
+          "data": {
+            "kind": "run.started",
+            "model": "mock"
+          }
+        },
+        {
+          "run_id": "5e9a36ba-4167-4836-a4f8-3b5cb3b08a2c",
+          "sequence": 2,
+          "occurred_at": "2026-11-17T07:05:37.168270Z",
+          "data": {
+            "kind": "tool.started",
+            "tool": "search_code",
+            "step": 1
+          }
+        },
+        {
+          "run_id": "5e9a36ba-4167-4836-a4f8-3b5cb3b08a2c",
+          "sequence": 3,
+          "occurred_at": "2026-11-17T07:05:37.181252Z",
+          "data": {
+            "kind": "tool.completed",
+            "tool": "search_code",
+            "step": 1
+          }
+        },
+        {
+          "run_id": "5e9a36ba-4167-4836-a4f8-3b5cb3b08a2c",
+          "sequence": 4,
+          "occurred_at": "2026-11-17T07:05:37.186651Z",
+          "data": {
+            "kind": "run.completed",
+            "result": {
+              "answer": "Relevant source: src/itsdangerous/signer.py:201-266. alt + secret_key).digest())\n        elif self.key_derivation == \"django-concat\":\n            return t.cast(\n                bytes, self.digest_method(self.salt + b\"signer\" + secret_key).digest()\n            )\n        elif self.key_derivation == \"hmac\":\n            mac = hmac.new(secret_key, digestmod=self.digest_method)\n            mac.update(self.salt)\n            return mac.digest()\n        elif self.key_derivation == \"none\":\n            return secret_key\n        else:\n            raise TypeError(\"Unknown key derivation method\")\n\n    def get_signature(self, value: str | bytes) -> bytes:\n        \"\"\"Returns the signature for the given value.\"\"\"\n        value = want_bytes(value)\n        key = self.derive_key()\n        sig = self.algorithm.get_signature(key, value)\n        return base64_encode(sig)\n\n    def sign(self, value: str | bytes) -> bytes:\n        \"\"\"Signs the given string.\"\"\"\n        value = want_bytes(value)\n        return value + self.sep + self.get_signature(value)\n\n    def v",
+              "citations": [
+                {
+                  "chunk_id": "0399bdf8-fdb3-534e-b094-41ce36d06137",
+                  "repository_id": "a03d0d98-cc6a-4d48-ac86-6d88782b80e3",
+                  "generation_id": "00394b37-9ed3-491b-a8b5-cdd1daabf854",
+                  "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+                  "path": "src/itsdangerous/signer.py",
+                  "start_line": 201,
+                  "end_line": 266
+                }
+              ],
+              "evidence_status": "supported",
+              "model": "mock",
+              "estimated_cost_usd": "0.000000"
+            }
+          }
+        }
+      ],
+      "resume_after": 2,
+      "resumed_sequences": [
+        3,
+        4
+      ]
+    }
+  ]
+}

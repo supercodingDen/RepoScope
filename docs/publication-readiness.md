@@ -1,5 +1,7 @@
 # Public repository readiness
 
+Update, 2026-11-17: GitHub now reports this repository public and `main` protected. The following 2026-10-23 audit describes the pre-publication snapshot. The static portfolio demo and the unhosted backend remain separate deployment targets.
+
 This record separates publication of GitHub source from hosting the API. The owner chose to make the existing `supercodingDen/RepoScope` repository public, including its commit-author metadata. No API credential belongs in Git, a release asset, an Actions variable, or a screenshot. Future live credentials must be created and mounted from protected host files after hosting is selected; see [manual configuration](manual-configuration.md).
 
 ## Pre-publication audit, 2026-10-23

@@ -26,4 +26,6 @@ artifacts/
 node_modules/
 .next/
 dist/
+web/demo/test-results/
+web/demo/playwright-report/
 *.zip

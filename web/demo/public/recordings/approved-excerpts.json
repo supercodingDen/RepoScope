@@ -1,0 +1,25 @@
+{
+  "commit_sha": "672971d66a2ef9f85151e53283113f33d642dabd",
+  "excerpts": {
+    "src/itsdangerous/signer.py:201:266": "88e134403a7e27c0182559094b7985edf624eb3f09c3e23c71c8bd0c6541c924",
+    "src/itsdangerous/signer.py:12:28": "9de1fd2ad2eaff450c6f9424951ed77157507e3339b4173acadf43e2f2e6494b",
+    "src/itsdangerous/timed.py:19:89": "6971fd207496fde7d5d39c5f88cd133cf328ccd6c52975e902357d3afe369f07",
+    "CHANGES.rst:1:79": "c808394cbb859ca2330e445353fd1d50901f551227451cabc8d47b554fc55abb",
+    "src/itsdangerous/signer.py:37:45": "38b61f1d72f57ee648857b70e17c79d7863f8a18518f37ebaba28608d02df6d5",
+    "docs/serializer.rst:80:112": "bec8279436f45a10a2b653b2fa9ae8afbf33f9403f7d594e4b63214ea63b86c0",
+    "src/itsdangerous/signer.py:73:129": "e6e50d7719daf8b4402df61a63d973bf981d11917300cbf1b88ada3e725946c2",
+    "src/itsdangerous/__init__.py:10:11": "105d7b7faab5f0af19d4100c56ff927980d9de49b42a1251c83de1bf74188569",
+    "src/itsdangerous/serializer.py:37:92": "88e3d14290ee912910260cb43b6f29f0bc4b88c68d1a71804a5f18f9f51a1fc9",
+    "src/itsdangerous/serializer.py:32:37": "91d310a6c6c791e556bb560bacf8bca46746d25eb87d7e974e8a91509c8e75b9",
+    "docs/_static/itsdangerous-logo.svg:13:17": "9ef74adbd9b623990a37b37b73c01a8582a47c6706a7fe59f60aebebf454dd4c",
+    "tests/test_itsdangerous/test_serializer.py:32:104": "0792836239bb79e6b5e6e7c56ca4fd2c4675c177634ac5914b00c6e6a6ae79b3",
+    "src/itsdangerous/signer.py:6:8": "7c70a83391765da46f884a6eccc02c1fafcd7928451bbb8f3546c4458f3c120f",
+    "src/itsdangerous/signer.py:4:5": "c5fa189091c006ec56c964f036aecc36ef74fda03bb207ed244c33872c274933",
+    "src/itsdangerous/signer.py:8:9": "7b73d0f73ba5d8e672d6b3e6426a71804641353d7ea48d392c4aee4d02473f91",
+    "src/itsdangerous/signer.py:5:6": "6f7babd8d195af11063c1a15309fa3dd5bdc834b96f7dd03ef218e92b0de2c54",
+    "src/itsdangerous/signer.py:11:12": "5f8e64a01aa0b1464790ead50266f3e24741f3bc9dfb7ed83c5f84f392391bba",
+    "src/itsdangerous/signer.py:45:64": "6aa1295ecc4a81062b0a4e5b06c5a44039b1a1537069d139e859d2b1a41213c1",
+    "src/itsdangerous/signer.py:1:3": "78b0d8142bbe1d9c30029cd8212b624f4f7e48ae8309fa0c3f2e134a0d5a2c28",
+    "src/itsdangerous/signer.py:3:4": "88f08eabd2976211c1af186631c67b11240391cdcbf91f72ca72a772001d25fc"
+  }
+}
