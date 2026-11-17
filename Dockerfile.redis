@@ -1,0 +1,5 @@
+FROM redis:8.6.6-alpine@sha256:23a604374ece8069b34131faac7a1f05ae73c64280e46af1de844f29af2846d4
+
+RUN apk add --no-cache --upgrade musl=1.2.5-r24 musl-utils=1.2.5-r24 zlib=1.4-r0
+
+USER redis

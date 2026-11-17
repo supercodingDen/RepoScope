@@ -29,7 +29,7 @@ sudo sh -c 'umask 077; openssl rand -hex 32 > /etc/reposcope/secrets/postgres_pa
 sudo chmod 0600 /etc/reposcope/secrets/*
 ```
 
-Create `/etc/reposcope/production.env` with mode 0600 and **only non-secret** assignments: `REPOSCOPE_SECRETS_DIR=/etc/reposcope/secrets`, `REPOSCOPE_DOMAIN=<your-domain>`, `REPOSCOPE_APP_IMAGE=reposcope:<reviewed-sha>`, `REPOSCOPE_POSTGRES_IMAGE=reposcope-postgres:<reviewed-sha>`, `REPOSCOPE_NATS_IMAGE=reposcope-nats:<reviewed-sha>`, `CADDY_IMAGE=caddy:<reviewed-version>@sha256:<reviewed-manifest-digest>`, `PROVIDER_MODE=mock`, `ALLOW_PAID_API_CALLS=false`, and optionally a fixed `REPOSCOPE_PRINCIPAL_ID` UUID. Pin the official Caddy manifest digest for your architecture, inspecting it with `docker buildx imagetools inspect caddy:<reviewed-version>`. Record version and digest. No secret value belongs in this file.
+Create `/etc/reposcope/production.env` with mode 0600 and **only non-secret** assignments: `REPOSCOPE_SECRETS_DIR=/etc/reposcope/secrets`, `REPOSCOPE_DOMAIN=<your-domain>`, `REPOSCOPE_APP_IMAGE=reposcope:<reviewed-sha>`, `REPOSCOPE_POSTGRES_IMAGE=reposcope-postgres:<reviewed-sha>`, `REPOSCOPE_NATS_IMAGE=reposcope-nats:<reviewed-sha>`, `REPOSCOPE_REDIS_IMAGE=reposcope-redis:<reviewed-sha>`, `CADDY_IMAGE=caddy:<reviewed-version>@sha256:<reviewed-manifest-digest>`, `PROVIDER_MODE=mock`, `ALLOW_PAID_API_CALLS=false`, and optionally a fixed `REPOSCOPE_PRINCIPAL_ID` UUID. Pin the official Caddy manifest digest for your architecture, inspecting it with `docker buildx imagetools inspect caddy:<reviewed-version>`. Record version and digest. No secret value belongs in this file.
 
 The `v0.1.0` archive predates the production secret launcher. From the **new exact source SHA**, first run offline checks and `python -m scripts.smoke_test` in an isolated Compose project once Docker works; then build and retain images:
 
@@ -37,10 +37,11 @@ The `v0.1.0` archive predates the production secret launcher. From the **new exa
 docker build --target runtime -t "reposcope:<reviewed-sha>" .
 docker build -f Dockerfile.postgres -t "reposcope-postgres:<reviewed-sha>" .
 docker build -f Dockerfile.nats -t "reposcope-nats:<reviewed-sha>" .
+docker build -f Dockerfile.redis -t "reposcope-redis:<reviewed-sha>" .
 docker image inspect --format '{{.Id}}' "reposcope:<reviewed-sha>" "reposcope-postgres:<reviewed-sha>" "reposcope-nats:<reviewed-sha>"
 ```
 
-Save the three images with `docker save`, hash the archive with `sha256sum`, and keep it in protected storage for rollback. Record image IDs, source SHA, checksum, CI URL, and Caddy/Redis digests. These image IDs are local config digests, not registry manifest digests. A later reviewed registry release can replace this host build. Pull the pinned Caddy and Redis images.
+Save all four reviewed images (application, PostgreSQL, NATS, Redis) with `docker save`, hash the archive with `sha256sum`, and keep it in protected storage for rollback. Set the non-secret `REPOSCOPE_REDIS_IMAGE=reposcope-redis:<reviewed-sha>` alongside the other image settings in `production.env`. The Redis build keeps server version 8.6.6 and applies reviewed Alpine security packages. Record image IDs, source SHA, checksum, CI URL, and the Caddy digest. These image IDs are local config digests, not registry manifest digests. A later reviewed registry release can replace this host build. Pull only the pinned Caddy image; do not substitute the unpatched upstream Redis image.
 
 ## 5. Deploy mock mode and verify the public boundary
 
